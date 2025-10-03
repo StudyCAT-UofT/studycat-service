@@ -32,7 +32,7 @@ class MultidimensionalModel:
         ability_estimator: Type[IEstimator] = BayesModal,
         estimator_args: dict[str, Any] | None = None,
         item_selector: ItemSelectionStrategy = maximum_information_criterion,
-        item_selector_args: dict[str, Any] | None = None,
+        item_selector_args: dict[str, Any] | None = None
     ) -> None:
         """
         Adds a new unidimensional model tracking the specified skill. 
@@ -84,7 +84,7 @@ class MultidimensionalModel:
             response (int): 0 for incorrect, 1 for correct
             item (TestItem): The TestItem object for the specific question asked
         """
-        self.models[skill].record_response(1, item)
+        self.models[skill].record_response(response, item)
 
         # update lowest_theta value, used for item selection
         if self.models[skill].get_theta() < self.lowest_theta[0]:
