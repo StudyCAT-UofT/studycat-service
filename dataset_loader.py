@@ -10,9 +10,10 @@ Load a StudyCAT-style tabular dataset into a pandas.DataFrame.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Sequence, List, Tuple
+from typing import Optional, Sequence, Dict, Any, Tuple
 
 import pandas as pd
+from openpyxl import load_workbook
 
 # --------------------------- Configuration -----------------------------------
 # Update this path locally when you want to test the loader
@@ -29,6 +30,9 @@ class DatasetValidationError(Exception):
 
 
 # --------------------------- Helpers -----------------------------------------
+DEFAULT_OPTION_LABELS: Tuple[str, ...] = ("A", "B", "C", "D")
+
+
 def _read_csv(path: Path) -> pd.DataFrame:
     """Read a CSV file into a DataFrame."""
     try:
@@ -57,12 +61,75 @@ def _validate_required_columns(df: pd.DataFrame, required: Optional[Sequence[str
         )
 
 
+def _normalize_key(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    return text
+
+
+def _extract_bold_correct_indices(
+    path: Path,
+    *,
+    question_column: str,
+    option_labels: Sequence[str],
+) -> Dict[str, int]:
+    workbook = load_workbook(path, data_only=True)
+    try:
+        sheet = workbook.active
+
+        header_cells = next(sheet.iter_rows(min_row=1, max_row=1))
+        header_map: Dict[str, int] = {}
+        for idx, cell in enumerate(header_cells):
+            title = cell.value
+            if isinstance(title, str):
+                header_map[title.strip()] = idx
+
+        required_headers = [question_column] + [f"Response_{label}" for label in option_labels]
+        missing_headers = [name for name in required_headers if name not in header_map]
+        if missing_headers:
+            raise DatasetValidationError(
+                f"Missing header(s) for bold detection: {missing_headers}"
+            )
+
+        lookup: Dict[str, int] = {}
+        for row in sheet.iter_rows(min_row=2):
+            q_cell = row[header_map[question_column]]
+            question_value = q_cell.value
+            question_key = _normalize_key(question_value)
+            if not question_key:
+                continue
+
+            bold_indices: list[int] = []
+            for idx, label in enumerate(option_labels):
+                cell = row[header_map[f"Response_{label}"]]
+                if cell.font and cell.font.bold:
+                    bold_indices.append(idx)
+
+            if not bold_indices:
+                continue
+            if len(bold_indices) > 1:
+                raise DatasetValidationError(
+                    f"Multiple bold responses found for Question_ID={question_key}: {bold_indices}"
+                )
+
+            lookup[question_key] = bold_indices[0]
+
+        return lookup
+    finally:
+        workbook.close()
+
+
 # --------------------------- Public API --------------------------------------
 def load_dataset(
     path: str | Path | None = None,
     *,
     required_columns: Optional[Sequence[str]] = None,
     excel_sheet: Optional[str] = None,
+    derive_correct_from_bold: bool = False,
+    question_column: str = "Question_ID",
+    option_labels: Sequence[str] = DEFAULT_OPTION_LABELS,
+    correct_index_column: str = "__correct_index",
 ) -> pd.DataFrame:
     """
     Load a dataset file into a pandas DataFrame.
@@ -99,6 +166,32 @@ def load_dataset(
 
     # Optional required-column validation
     _validate_required_columns(df, required_columns)
+
+    if derive_correct_from_bold:
+        if ext != ".xlsx":
+            raise DatasetValidationError(
+                "derive_correct_from_bold requires an Excel (.xlsx) dataset"
+            )
+        lookup = _extract_bold_correct_indices(
+            p,
+            question_column=question_column,
+            option_labels=option_labels,
+        )
+
+        keys = df[question_column].apply(_normalize_key)
+        missing_keys = keys[keys == ""].tolist()
+        if missing_keys:
+            raise DatasetValidationError(
+                f"Row(s) missing {question_column}: {missing_keys}"
+            )
+
+        unresolved = [key for key in keys if key not in lookup]
+        if unresolved:
+            raise DatasetValidationError(
+                f"No bold (correct) response found for Question_ID(s): {sorted(set(unresolved))}"
+            )
+
+        df[correct_index_column] = keys.map(lookup)
 
     return df
 
