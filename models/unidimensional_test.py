@@ -29,6 +29,8 @@ print(model.get_theta())
 
 next_question = model.get_next_item()
 
+print(next_question.id)
+
 model.record_response(1, next_question)
 
 print(model.get_theta())
