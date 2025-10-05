@@ -23,10 +23,10 @@ class MultidimensionalModel:
         self.student_id = student_id
         self.test_id = test_id
         self.models = {}
-        self.lowest_theta = (math.inf, "")
 
     def add_model(self, 
         skill: str, 
+        mastery_threshold: float,
         item_pool: ItemPool, 
         initial_theta: float = 0.0, 
         ability_estimator: Type[IEstimator] = BayesModal,
@@ -39,6 +39,7 @@ class MultidimensionalModel:
 
         Arguments: 
             skill (str): The skill/concept this model is tracking.
+            mastery_threshold (float): The value theta should reach to stop asking questions from this skill/concept. 
             item_pool (ItemPool): All unanswered TestItem objects relating to this skill/concept.
             initial_theta (float): The initial ability value estimate, defaults to 0.0
             ability_estimator (Type[IEstimator]): 
@@ -50,9 +51,9 @@ class MultidimensionalModel:
             item_selector_args (dict[str, Any] | None):
                 Arguments to provide to the item selector class, defaults to None
         """
-        self.skill = skill
 
         model = UnidimensionalModel(skill=skill,
+                                    mastery_threshold=mastery_threshold,
                                     item_pool=item_pool,
                                     initial_theta=initial_theta,
                                     ability_estimator=ability_estimator,
@@ -61,9 +62,6 @@ class MultidimensionalModel:
                                     item_selector_args=item_selector_args)
         
         self.models[skill] = model
-
-        if (model.get_theta() < self.lowest_theta[0]): 
-            self.lowest_theta = (model.get_theta(), skill)
 
     def get_theta(self, skill: str) -> None:
         """
@@ -86,10 +84,6 @@ class MultidimensionalModel:
         """
         self.models[skill].record_response(response, item)
 
-        # update lowest_theta value, used for item selection
-        if self.models[skill].get_theta() < self.lowest_theta[0]:
-            self.lowest_theta = (self.models[skill].get_theta(), skill)
-
     def get_next_item(self) -> TestItem:
         """
         Returns the TestItem object associated with the next question that should be asked to the student.
@@ -98,8 +92,24 @@ class MultidimensionalModel:
         NOTE: in the testing phase, perhaps try out different question picking strategies. 
 
         Return:
-            TestItem: The next question that should be asked in the adaptive test. 
+            TestItem: The next question that should be asked in the adaptive test, or None if no TestItems are left. 
         """
-        return self.models[self.lowest_theta[1]].get_next_item()
+        sorted_models = sorted(
+            self.models.items(), 
+            key=lambda kv: kv[1].get_theta()
+        )
+
+        for skill, model in sorted_models:
+            if not model.questions_left:
+                continue
+            if model.mastery_reached:
+                continue
+
+            next_item = model.get_next_item()
+            if next_item is not None:
+                return next_item
+
+        # if all are exhausted or mastered
+        return None
 
 
