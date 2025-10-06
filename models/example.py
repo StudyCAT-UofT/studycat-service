@@ -60,7 +60,7 @@ def demo_unidimensional():
     for i in range(6):
         item = math_model.get_next_item()
         if math_model.mastery_reached:
-                    print("Mastery reached.")
+            print("Mastery reached.")
         if item is None:
             print("No more items left in the Math pool.")
             break

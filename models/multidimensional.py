@@ -13,7 +13,7 @@ class MultidimensionalModel:
     Attributes: 
         student_id (int): A unique identifier for the student this model is tracking.
         test_id (int): A unique identifier for the test this model is administering. 
-        models (dict[str: UnidimensionalModel]): 
+        models (dict[str, UnidimensionalModel]): 
             A dictionary of unidimensional models. Keys are the skills which these models track. 
         lowest_theta (tuple[float, str]): 
             The current lowest theta value across all unidimensional models. Organized by (theta, skill)
