@@ -1,4 +1,4 @@
-from unidimensional import UnidimensionalModel
+from models.unidimensional import UnidimensionalModel
 from adaptivetesting.models import TestItem, ItemPool
 from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
