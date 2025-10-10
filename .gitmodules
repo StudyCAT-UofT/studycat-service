@@ -1,0 +1,4 @@
+[submodule "external/studycat"]
+	path = external/studycat
+	url = https://github.com/StudyCAT-UofT/studycat.git
+	branch = main
