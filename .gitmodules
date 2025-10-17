@@ -1,0 +1,3 @@
+[submodule "external/studycat-schema"]
+	path = external/studycat-schema
+	url = https://github.com/StudyCAT-UofT/studycat-schema.git
