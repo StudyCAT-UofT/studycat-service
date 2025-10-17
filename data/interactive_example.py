@@ -13,6 +13,13 @@ from adaptivetesting.models import TestItem, ItemPool
 
 
 def run_interactive_cat():
+    """
+    Runs an interactive CAT simulation with questions from an Excel spreadsheet.
+
+    This interactive sim is meant purely for testing purposes.
+
+    Theta estimates and next questions will be generated according to a 3PL IRT model.
+    """
     file_path = input("Enter the file path to the Excel spreadsheet: ").strip()
     df = excel_to_df(file_path)
 
