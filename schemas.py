@@ -1,53 +1,48 @@
 """
-Pydantic models for request/response payloads.
+Pydantic models for the engine API.
 """
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
-# ---- Public-facing item (we hide a/b/c from clients) ------------------------
-class ItemPayload(BaseModel):
-    item_id: str
-    stem: str
-    options: List[str]
-    concept: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-# ---- Session init -----------------------------------------------------------
-class InitSessionRequest(BaseModel):
-    concepts: Optional[List[str]] = None     # restrict pool; None = all
-    max_items: Optional[int] = None          # hard cap this session
-    prior_mu: Optional[float] = None         # prior mean for theta
-    prior_sigma2: Optional[float] = None     # prior variance
+# ---- Requests ----
 
-class InitSessionResponse(BaseModel):
-    session_id: str
-    theta: Dict[str, float]
-    next_item: Optional[ItemPayload] = None  # prefetch first item
+class AttemptInitRequest(BaseModel):
+    attempt_id: str
+    concepts: Optional[List[str]] = None          # ASSUMPTION: modules; None => use quiz scope
+    prior_mu: Optional[float] = None              # Optional override
+    prior_sigma2: Optional[float] = None          # Optional override
 
-# ---- Single-step flow: submit previous answer & get next --------------------
-class StepRequest(BaseModel):
-    session_id: str
-    # For the first step right after /init, client can omit item_id/answer_index
-    # (meaning: there's no prior response to submit yet).
+
+class AttemptStepRequest(BaseModel):
+    attempt_id: str
+    # For the very first call after init, item_id/answer may be omitted.
     item_id: Optional[str] = None
+    # ASSUMPTION: index aligned to labels A=0, B=1, C=2, D=3 (CHECK if Core sends label instead).
     answer_index: Optional[int] = None
     response_time_ms: Optional[int] = None
 
-class StepResponse(BaseModel):
-    session_id: str
-    theta: Dict[str, float]
-    mastery: Dict[str, bool]
-    next_action: str                 # CONTINUE | FINISH
+
+# ---- Responses ----
+
+class ItemPayload(BaseModel):
+    item_id: str
+    skill: str                                   # concept/module chosen for this item
+    stem: str
+    options: List[str]                           # Option texts in label order A..D
+
+
+class AttemptInitResponse(BaseModel):
+    attempt_id: str
+    theta: Dict[str, float]                      # per-skill ability estimates
     next_item: Optional[ItemPayload] = None
+    next_action: str = Field(default="CONTINUE") # Always CONTINUE for init
 
-# ---- Optional diagnostics ---------------------------------------------------
-class SessionStateRequest(BaseModel):
-    session_id: str
 
-class SessionStateResponse(BaseModel):
-    session_id: str
+class AttemptStepResponse(BaseModel):
+    attempt_id: str
     theta: Dict[str, float]
-    asked_items: List[str]
-    remaining_items: int
     mastery: Dict[str, bool]
+    next_action: str                             # CONTINUE | FINISH
+    next_item: Optional[ItemPayload] = None
