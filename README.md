@@ -53,3 +53,58 @@ To connect to the database, you can use the `db` client in the `db` directory. Y
 ```python
 from db.client import db
 ```
+
+## Hardcoded Version (For Frontend Development)
+
+This repository includes a hardcoded version of the service that returns mock data without requiring database setup. This is useful for frontend development and testing API endpoints.
+
+### Quick Start (Hardcoded Version)
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start the service:**
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+3. **Test the endpoints:**
+   ```bash
+   # Health check
+   curl -X GET "http://localhost:8000/v1/health"
+   
+   # Initialize an attempt
+   curl -X POST "http://localhost:8000/v1/attempt/init" \
+     -H "Content-Type: application/json" \
+     -d '{"attempt_id": "test_001"}'
+   
+   # Answer a question
+   curl -X POST "http://localhost:8000/v1/attempt/step" \
+     -H "Content-Type: application/json" \
+     -d '{"attempt_id": "test_001", "item_id": "item_001", "answer_index": 0}'
+   ```
+
+### API Endpoints (Hardcoded Version)
+
+- `GET /v1/health` - Health check endpoint
+- `POST /v1/attempt/init` - Initialize a new quiz attempt
+- `POST /v1/attempt/step` - Submit an answer and get the next question
+
+### Sample Data
+
+The hardcoded version includes 5 sample math questions covering algebra and geometry concepts. The service tracks attempt state in memory and provides a simple progression through the questions.
+
+### Switching Between Versions
+
+- **Hardcoded version**: Uses `service/core_hardcoded.py` (current default)
+- **Database version**: Uses `service/core.py` (TODO: requires database setup)
+
+To switch to the database version, update the import in `routers.py`:
+```python
+# Change this line in routers.py
+from service.core_hardcoded import init_attempt, step_attempt, PublicItem
+# To this:
+from service.core import init_attempt, step_attempt, PublicItem
+```
