@@ -94,14 +94,14 @@ This repository includes a hardcoded version of the service that returns mock da
 
 ### Sample Data
 
-The hardcoded version includes 5 sample math questions covering algebra and geometry concepts. The service tracks attempt state in memory and provides a simple progression through the questions.
+The hardcoded version includes 5 sample questions. The service tracks attempt state in memory and provides a simple progression through the questions.
 
 ### Switching Between Versions
 
 - **Hardcoded version**: Uses `service/core_hardcoded.py` (current default)
 - **Database version**: Uses `service/core.py` (TODO: requires database setup)
 
-To switch to the database version, update the import in `routers.py`:
+To switch to the database version (not yet implemented), update the import in `routers.py`:
 ```python
 # Change this line in routers.py
 from service.core_hardcoded import init_attempt, step_attempt, PublicItem

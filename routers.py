@@ -5,8 +5,6 @@ We expose:
 - GET  /v1/health           (liveness)
 - POST /v1/attempt/init     (start an attempt and get the first item)
 - POST /v1/attempt/step     (apply the latest response and get the next item)
-
-ASSUMPTION: No auth for MVP (you requested to skip). Add middleware later if needed.
 """
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
