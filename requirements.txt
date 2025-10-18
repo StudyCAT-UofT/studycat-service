@@ -1,9 +1,3 @@
 fastapi
 uvicorn[standard]
 pydantic
-pandas
-numpy
-openpyxl
-prisma
-adaptivetesting
-python-dotenv

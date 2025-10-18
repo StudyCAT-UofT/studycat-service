@@ -15,7 +15,7 @@ from schemas import (
     AttemptStepRequest, AttemptStepResponse,
     ItemPayload,
 )
-from service.core import init_attempt, step_attempt, PublicItem
+from service.core_hardcoded import init_attempt, step_attempt, PublicItem
 
 router = APIRouter(tags=["engine"])
 
