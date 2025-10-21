@@ -1,11 +1,9 @@
 """
-Adapter that wraps your existing UnidimensionalModel / MultidimensionalModel.
+Adapter that wraps the existing UnidimensionalModel / MultidimensionalModel.
 
-ASSUMPTION:
-- The files `unidimensional.py` and `multidimensional.py` are importable (on PYTHONPATH)
-  with the class signatures you pasted. If the module path differs, adjust the imports.
+NOTE: To be checked.
 
-We keep this tiny: build item pools per concept, initialize the models, apply the last
+Build item pools per concept, initialize the models, apply the last
 response (if provided), and ask the model for the next item.
 """
 from __future__ import annotations
@@ -17,8 +15,8 @@ from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
 
 # Import your wrappers
-from unidimensional import UnidimensionalModel
-from multidimensional import MultidimensionalModel
+from models.unidimensional import UnidimensionalModel
+from models.multidimensional import MultidimensionalModel
 
 
 def _make_test_item(a: float, b: float, c: float) -> TestItem:

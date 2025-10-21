@@ -15,7 +15,7 @@ from schemas import (
     AttemptStepRequest, AttemptStepResponse,
     ItemPayload,
 )
-from service.core_hardcoded import init_attempt, step_attempt, PublicItem
+from service.core import init_attempt, step_attempt, PublicItem
 
 router = APIRouter(tags=["engine"])
 
@@ -31,12 +31,12 @@ def _map_public_item(p: PublicItem | None) -> ItemPayload | None:
     return ItemPayload(item_id=p.item_id, skill=p.skill, stem=p.stem, options=p.options)
 
 
-@router.post("/attempt/init", response_model=AttemptInitResponse)
-async def attempt_init(payload: AttemptInitRequest) -> AttemptInitResponse:
+@router.post("/attempts/{attempt_id}/init", response_model=AttemptInitResponse)
+async def attempt_init(attempt_id: str, payload: AttemptInitRequest) -> AttemptInitResponse:
     try:
         theta, next_item = await init_attempt(
-            attempt_id=payload.attempt_id,
-            concepts=payload.concepts,
+            attempt_id=attempt_id,
+            modules=payload.modules,
             prior_mu=payload.prior_mu,
             prior_sigma2=payload.prior_sigma2
         )
@@ -44,18 +44,18 @@ async def attempt_init(payload: AttemptInitRequest) -> AttemptInitResponse:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     return AttemptInitResponse(
-        attempt_id=payload.attempt_id,
         theta=theta,
         next_item=_map_public_item(next_item),
         next_action="CONTINUE"
     )
 
 
-@router.post("/attempt/step", response_model=AttemptStepResponse)
-async def attempt_step(payload: AttemptStepRequest) -> AttemptStepResponse:
+@router.post("/attempts/{attempt_id}/step", response_model=AttemptStepResponse)
+async def attempt_step(attempt_id: str, payload: AttemptStepRequest) -> AttemptStepResponse:
     try:
         theta, mastery, next_item, is_finished = await step_attempt(
-            attempt_id=payload.attempt_id,
+            attempt_id=attempt_id,
+            response_id=payload.response_id,
             item_id=payload.item_id,
             answer_index=payload.answer_index
         )
@@ -63,7 +63,6 @@ async def attempt_step(payload: AttemptStepRequest) -> AttemptStepResponse:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     return AttemptStepResponse(
-        attempt_id=payload.attempt_id,
         theta=theta,
         mastery=mastery,
         next_action="FINISH" if is_finished else "CONTINUE",

@@ -1,5 +1,7 @@
 """
 Thin repository wrapper to isolate Prisma queries from the engine logic.
+
+NOTE: Placeholder -- to be checked and implemented.
 """
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
@@ -54,6 +56,14 @@ async def get_latest_response_without_snapshot(attempt_id: str) -> Optional[Resp
         include={"item": {"include": {"options": True}}}
     )
     return rows[0] if rows else None
+
+
+async def get_response_by_id(response_id: str) -> Optional[Response]:
+    """Fetch a specific Response by ID with item and options included."""
+    return await db.response.find_unique(
+        where={"id": response_id},
+        include={"item": {"include": {"options": True}}}
+    )
 
 
 async def attach_engine_snapshot_to_response(response_id: str, snapshot: Dict[str, Any]) -> None:
@@ -113,4 +123,107 @@ async def get_item_by_id(item_id: str) -> Optional[Item]:
     return await db.item.find_unique(
         where={"id": item_id},
         include={"options": True}
+    )
+
+
+# -------- Create Functions for Testing --------
+
+async def create_quiz(quiz_data: Dict[str, Any]) -> Quiz:
+    """Create a new quiz for testing."""
+    return await db.quiz.create(
+        data={
+            "id": quiz_data["id"],
+            "offeringId": quiz_data["offeringId"],
+            "title": quiz_data["title"],
+            "fixedLength": quiz_data["fixedLength"],
+            "includedModules": quiz_data.get("includedModules", []),
+            "includedBlooms": [BloomCategory(b) for b in quiz_data.get("includedBlooms", [])],
+            "active": True
+        }
+    )
+
+
+async def create_item(item_data: Dict[str, Any]) -> Item:
+    """Create a new item for testing."""
+    # Create the item first
+    item = await db.item.create(
+        data={
+            "id": item_data["id"],
+            "courseId": item_data["courseId"],
+            "externalQuestionId": item_data["externalQuestionId"],
+            "stem": item_data["stem"],
+            "module": item_data["concept"],
+            "bloom": BloomCategory(item_data["bloom"]),
+            "irtA": item_data["irtA"],
+            "irtB": item_data["irtB"],
+            "irtC": item_data["irtC"],
+            "active": True
+        }
+    )
+    
+    # Create options
+    for option_data in item_data["options"]:
+        await db.itemoption.create(
+            data={
+                "itemId": item.id,
+                "label": OptionLabel(option_data["label"]),
+                "text": option_data["text"],
+                "isCorrect": option_data["isCorrect"]
+            }
+        )
+    
+    # Return item with options
+    return await get_item_by_id(item.id)
+
+
+async def create_attempt(attempt_data: Dict[str, Any]) -> Attempt:
+    """Create a new attempt for testing."""
+    return await db.attempt.create(
+        data={
+            "id": attempt_data["id"],
+            "quizId": attempt_data["quizId"],
+            "userId": attempt_data["userId"],
+            "status": AttemptStatus(attempt_data["status"]),
+            "startedAt": attempt_data["startedAt"],
+            "fixedLengthN": attempt_data.get("fixedLengthN", 10)
+        }
+    )
+
+
+async def create_response(response_data: Dict[str, Any]) -> Response:
+    """Create a new response for testing."""
+    # Convert answerIndex to OptionLabel
+    answer_index = response_data["answerIndex"]
+    option_labels = ["A", "B", "C", "D"]
+    selected_label = option_labels[answer_index] if 0 <= answer_index < len(option_labels) else "A"
+    
+    return await db.response.create(
+        data={
+            "id": response_data["id"],
+            "attemptId": response_data["attemptId"],
+            "itemId": response_data["itemId"],
+            "selectedLabel": OptionLabel(selected_label),
+            "isCorrect": response_data["isCorrect"],
+            "responseTimeMs": response_data.get("responseTimeMs", 0),
+            "answeredAt": response_data.get("submittedAt", "2024-01-01T00:00:00Z"),
+            "askedAt": response_data.get("askedAt", "2024-01-01T00:00:00Z")
+        }
+    )
+
+
+# -------- Additional Helper Functions --------
+
+async def get_quiz_by_id(quiz_id: str) -> Optional[Quiz]:
+    """Get quiz by ID with all related data."""
+    return await db.quiz.find_unique(
+        where={"id": quiz_id},
+        include={"quizItems": True}
+    )
+
+
+async def get_attempt_by_id(attempt_id: str) -> Optional[Attempt]:
+    """Get attempt by ID with all related data."""
+    return await db.attempt.find_unique(
+        where={"id": attempt_id},
+        include={"quiz": True, "responses": True}
     )

@@ -1,13 +1,5 @@
 """
 Core orchestration that binds DB state <-> engine adapter.
-
-Design choices (explicit):
-- Stateless service: we rebuild model state on each call.
-- We PERSIST theta/mastery snapshots on each response via Response.engineMasterySnapshot.
-- We treat Item.module as "concept" (configurable).
-
-If you later add a dedicated table for ability estimates, update the persistence in one place
-(see `_snapshot_payload` and the call in `step_attempt`).
 """
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
@@ -29,12 +21,13 @@ class PublicItem:
 
 
 def _label_from_index(idx: int) -> OptionLabel:
-    # ASSUMPTION: 0..3 => A..D
+    # TODO: Don't restrict to A..D.
     mapping = [OptionLabel.A, OptionLabel.B, OptionLabel.C, OptionLabel.D]
     return mapping[idx]
 
 
 def _index_from_label(label: OptionLabel) -> int:
+    # TODO: Don't restrict to A..D.
     return {"A": 0, "B": 1, "C": 2, "D": 3}[label.name]
 
 
@@ -69,7 +62,7 @@ def _build_item_pools(items) -> Tuple[List[str], Dict[str, ItemPool], Dict[TestI
 
 def _public_item_payload(db_item) -> PublicItem:
     # Order options by label A..D
-    options = sorted(db_item.options, key=lambda o: o.label.name)
+    options = sorted(db_item.options, key=lambda o: o.label if isinstance(o.label, str) else o.label.name)
     return PublicItem(
         item_id=db_item.id,
         skill=getattr(db_item, settings.concept_field),
@@ -78,18 +71,32 @@ def _public_item_payload(db_item) -> PublicItem:
     )
 
 
-def _snapshot_payload(theta: Dict[str, float], mastery: Dict[str, bool]) -> Dict[str, Any]:
+def _snapshot_payload(theta: Dict[str, float], mastery: Dict[str, bool]) -> str:
     """
     Persisted on Response.engineMasterySnapshot (JSON).
-    NOTE: Schema calls it 'mastery snapshot', but we store both theta & mastery to keep it useful.
-    If you later add a dedicated ability table, write there instead and keep this as a lightweight copy.
+    Store mastery values as float (0.0-1.0) to match existing data format.
+    Returns JSON string for Prisma compatibility.
     """
-    return {"theta": theta, "mastery": mastery}
+    import json
+    # Convert boolean mastery to float values to match existing data format
+    snapshot = {skill: float(theta[skill]) for skill in mastery.keys()}
+    return json.dumps(snapshot)
+
+
+def _find_test_item_by_irt_params(model: 'MultidimensionalModel', a: float, b: float, c: float) -> Optional['TestItem']:
+    """Find a TestItem in the model's pools that matches the given IRT parameters."""
+    for skill, uni_model in model.models.items():
+        for test_item in uni_model.adaptive_test.item_pool.test_items:
+            if (abs(test_item.a - a) < 0.001 and 
+                abs(test_item.b - b) < 0.001 and 
+                abs(test_item.c - c) < 0.001):
+                return test_item
+    return None
 
 
 # ---- Orchestration -----------------------------------------------------------
 
-async def init_attempt(attempt_id: str, concepts: Optional[List[str]], prior_mu: Optional[float], prior_sigma2: Optional[float]) -> Tuple[Dict[str, float], Optional[PublicItem]]:
+async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: Optional[float], prior_sigma2: Optional[float]) -> Tuple[Dict[str, float], Optional[PublicItem]]:
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
         raise ValueError("Unknown attempt_id")
@@ -100,10 +107,10 @@ async def init_attempt(attempt_id: str, concepts: Optional[List[str]], prior_mu:
         return {}, None
 
     # Build pools and model
-    all_concepts, pools, _, _ = _build_item_pools(items)
+    all_concepts, pools, ti2id, ti2skill = _build_item_pools(items)
 
-    # Scope concepts if provided; else use all_concepts from pool
-    effective_concepts = concepts or all_concepts
+    # Scope modules if provided; else use all_concepts from pool
+    effective_concepts = modules or all_concepts
 
     # Mastery thresholds (uniform default unless provided)
     thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in effective_concepts}
@@ -125,34 +132,38 @@ async def init_attempt(attempt_id: str, concepts: Optional[List[str]], prior_mu:
     theta = {skill: uni.get_theta() for skill, uni in model.models.items()}
 
     # Return a public payload based on DB item object
-    # Find DB item by reverse mapping (rebuild mapping for a single item)
-    # Simpler: compute public payload directly from DB by id
-    # Find the DB id for next_item by scanning testitem_to_itemid built earlier—rebuild minimal map for this one
-    # For clarity (and no hidden state), do a direct lookup by best-effort:
+    # Find DB item by matching IRT parameters since TestItem objects may not be identical
     public = None
-    # Rebuild mapping by scanning the pool again; small overhead OK for MVP
-    _, _, ti2id, _ = _build_item_pools(items)
-    db_id = ti2id.get(next_item)
-    if db_id:
-        db_item = await repo.get_item_by_id(db_id)
-        if db_item:
-            public = _public_item_payload(db_item)
+    if next_item:
+        # Find the matching DB item by IRT parameters
+        for item in items:
+            if (item.irtA is not None and item.irtB is not None and item.irtC is not None and
+                abs(float(item.irtA) - next_item.a) < 0.001 and
+                abs(float(item.irtB) - next_item.b) < 0.001 and
+                abs(float(item.irtC) - next_item.c) < 0.001):
+                public = _public_item_payload(item)
+                break
 
     return theta, public
 
 
 async def step_attempt(
     attempt_id: str,
-    item_id: Optional[str],
-    answer_index: Optional[int]
+    response_id: str,
+    item_id: Optional[str] = None,
+    answer_index: Optional[int] = None
 ) -> Tuple[Dict[str, float], Dict[str, bool], Optional[PublicItem], bool]:
     """
-    Stateless step:
-    - Option A (preferred by you): Core Backend writes Response, we pick up the *latest* response
-      without an engine snapshot and augment it.
-    - Option B: If item_id + answer_index are provided, compute correctness directly (engine-only).
-
-    We implement both. If both are present, we trust the DB (Option A) but validate.
+    Process a response and return the next item.
+    
+    Args:
+        attempt_id: Unique identifier for the attempt
+        response_id: ID of the Response record created by Core Backend
+        item_id: Fallback item ID if Response lookup fails
+        answer_index: Fallback answer index if Response lookup fails
+    
+    Returns:
+        Tuple of (theta values, mastery values, next item, is_finished)
     """
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
@@ -175,25 +186,28 @@ async def step_attempt(
         mastery_thresholds=thr,
     )
 
-    # Reconstruct minimal state:
-    # MVP approach: warm-start from prior and only apply the *latest* response (keeps engine stateless & fast).
-    # TODO (optional): If you want exact replay, iterate all historical responses and call record_response for each.
-    latest = await repo.get_latest_response_without_snapshot(attempt_id)
+    # Fetch the Response record by response_id
+    response = await repo.get_response_by_id(response_id)
     used_response_id: Optional[str] = None
-    if latest:
-        used_response_id = latest.id
+    
+    if response:
+        used_response_id = response.id
         # DB has truth for correctness
-        is_correct = bool(latest.isCorrect)
+        is_correct = bool(response.isCorrect)
         # Identify skill by the item's module
-        skill = getattr(latest.item, settings.concept_field)
-        # Build a minimal TestItem for the latest item
-        # ASSUMPTION: latest.item has non-null irtA/B/C
-        prev_ti = _make_test_item(float(latest.item.irtA), float(latest.item.irtB), float(latest.item.irtC))
-        # Record the response into the correct skill model
-        model.models[skill].record_response(1 if is_correct else 0, prev_ti)
-
+        skill = getattr(response.item, settings.concept_field)
+        # Find the TestItem in the model that matches this response
+        prev_ti = _find_test_item_by_irt_params(
+            model, 
+            float(response.item.irtA), 
+            float(response.item.irtB), 
+            float(response.item.irtC)
+        )
+        if prev_ti:
+            # Record the response into the correct skill model
+            model.models[skill].record_response(1 if is_correct else 0, prev_ti)
     elif item_id is not None and answer_index is not None:
-        # Compute correctness without DB response (Option B)
+        # Fallback: compute correctness without DB response
         db_item = await repo.get_item_by_id(item_id)
         if not db_item:
             raise ValueError("Unknown item_id")
@@ -203,8 +217,15 @@ async def step_attempt(
             raise ValueError("Item has no correct option in DB")
         is_correct = (_label_from_index(answer_index) == correct_opt.label)
         skill = getattr(db_item, settings.concept_field)
-        prev_ti = _make_test_item(float(db_item.irtA), float(db_item.irtB), float(db_item.irtC))
-        model.models[skill].record_response(1 if is_correct else 0, prev_ti)
+        # Find the TestItem in the model that matches this item
+        prev_ti = _find_test_item_by_irt_params(
+            model, 
+            float(db_item.irtA), 
+            float(db_item.irtB), 
+            float(db_item.irtC)
+        )
+        if prev_ti:
+            model.models[skill].record_response(1 if is_correct else 0, prev_ti)
     else:
         # No response to apply (first step after init)
         pass
@@ -229,11 +250,13 @@ async def step_attempt(
     # Build public payload
     next_public: Optional[PublicItem] = None
     if next_item:
-        # Map next_item -> DB id via reverse map
-        db_id = ti2id.get(next_item)
-        if db_id:
-            db_item = await repo.get_item_by_id(db_id)
-            if db_item:
-                next_public = _public_item_payload(db_item)
+        # Find the matching DB item by IRT parameters since TestItem objects may not be identical
+        for item in items:
+            if (item.irtA is not None and item.irtB is not None and item.irtC is not None and
+                abs(float(item.irtA) - next_item.a) < 0.001 and
+                abs(float(item.irtB) - next_item.b) < 0.001 and
+                abs(float(item.irtC) - next_item.c) < 0.001):
+                next_public = _public_item_payload(item)
+                break
 
     return theta, mastery, next_public, is_finished
