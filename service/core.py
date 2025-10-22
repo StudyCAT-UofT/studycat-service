@@ -196,6 +196,25 @@ async def step_attempt(
         mastery_thresholds=thr,
     )
 
+    # Load all previous responses for this attempt and replay them
+    all_responses = await repo.list_responses(attempt_id)
+    for prev_response in all_responses:
+        # Skip the current response (we'll process it separately)
+        if prev_response.id == response_id:
+            continue
+            
+        # Replay previous response
+        is_correct = bool(prev_response.isCorrect)
+        skill = prev_response.item.moduleId
+        prev_ti = _find_test_item_by_irt_params(
+            model, 
+            float(prev_response.item.irtA), 
+            float(prev_response.item.irtB), 
+            float(prev_response.item.irtC)
+        )
+        if prev_ti:
+            model.models[skill].record_response(1 if is_correct else 0, prev_ti)
+
     # Fetch the Response record by response_id
     response = await repo.get_response_by_id(response_id)
     used_response_id: Optional[str] = None
