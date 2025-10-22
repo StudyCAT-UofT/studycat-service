@@ -43,7 +43,8 @@ async def list_responses(attempt_id: str) -> List[Response]:
     # We want ordered history to optionally "replay" into the model if you choose.
     return await db.response.find_many(
         where={"attemptId": attempt_id},
-        order={"answeredAt": "asc"}
+        order={"answeredAt": "asc"},
+        include={"item": {"include": {"options": True}}}
     )
 
 
