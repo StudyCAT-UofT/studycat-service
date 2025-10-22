@@ -5,7 +5,7 @@ NOTE: Placeholder -- to be checked and implemented.
 """
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
-from prisma.models import Attempt, Response, Item, ItemOption, Quiz
+from prisma.models import Attempt, Response, Item, ItemOption, Quiz, Theta, Module
 from prisma.enums import AttemptStatus, OptionLabel, BloomCategory
 from prisma.errors import PrismaError
 from db.client import db
@@ -94,8 +94,8 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> List[Item]:
 
     # Filter-based scope
     where_clause: Dict[str, Any] = {"active": True}
-    if quiz.includedModules:
-        where_clause["module"] = {"in": quiz.includedModules}
+    if quiz.includedModuleIds:
+        where_clause["moduleId"] = {"in": quiz.includedModuleIds}
     if quiz.includedBlooms:
         where_clause["bloom"] = {"in": quiz.includedBlooms}
 
@@ -128,6 +128,8 @@ async def get_item_by_id(item_id: str) -> Optional[Item]:
 
 # -------- Create Functions for Testing --------
 
+# TODO: Remove for production.
+
 async def create_quiz(quiz_data: Dict[str, Any]) -> Quiz:
     """Create a new quiz for testing."""
     return await db.quiz.create(
@@ -136,7 +138,7 @@ async def create_quiz(quiz_data: Dict[str, Any]) -> Quiz:
             "offeringId": quiz_data["offeringId"],
             "title": quiz_data["title"],
             "fixedLength": quiz_data["fixedLength"],
-            "includedModules": quiz_data.get("includedModules", []),
+            "includedModuleIds": quiz_data.get("includedModuleIds", []),
             "includedBlooms": [BloomCategory(b) for b in quiz_data.get("includedBlooms", [])],
             "active": True
         }
@@ -152,7 +154,7 @@ async def create_item(item_data: Dict[str, Any]) -> Item:
             "courseId": item_data["courseId"],
             "externalQuestionId": item_data["externalQuestionId"],
             "stem": item_data["stem"],
-            "module": item_data["concept"],
+            "moduleId": item_data["moduleId"],
             "bloom": BloomCategory(item_data["bloom"]),
             "irtA": item_data["irtA"],
             "irtB": item_data["irtB"],
@@ -227,3 +229,62 @@ async def get_attempt_by_id(attempt_id: str) -> Optional[Attempt]:
         where={"id": attempt_id},
         include={"quiz": True, "responses": True}
     )
+
+
+# -------- Theta Management --------
+
+async def get_theta(enrollment_id: str, module_id: str) -> Optional[Theta]:
+    """Get existing theta value for a specific enrollment and module."""
+    return await db.theta.find_unique(
+        where={
+            "enrollmentId_moduleId": {
+                "enrollmentId": enrollment_id,
+                "moduleId": module_id
+            }
+        }
+    )
+
+
+async def upsert_theta(enrollment_id: str, module_id: str, value: float) -> Theta:
+    """Create or update theta value for a specific enrollment and module."""
+    # First try to find existing theta
+    existing_theta = await db.theta.find_unique(
+        where={
+            "enrollmentId_moduleId": {
+                "enrollmentId": enrollment_id,
+                "moduleId": module_id
+            }
+        }
+    )
+    
+    if existing_theta:
+        # Update existing theta
+        return await db.theta.update(
+            where={
+                "enrollmentId_moduleId": {
+                    "enrollmentId": enrollment_id,
+                    "moduleId": module_id
+                }
+            },
+            data={"value": value}
+        )
+    else:
+        # Create new theta
+        return await db.theta.create(
+            data={
+                "enrollmentId": enrollment_id,
+                "moduleId": module_id,
+                "value": value
+            }
+        )
+
+
+async def get_thetas_for_enrollment(enrollment_id: str, module_ids: List[str]) -> Dict[str, float]:
+    """Get theta values for multiple modules for a specific enrollment."""
+    thetas = await db.theta.find_many(
+        where={
+            "enrollmentId": enrollment_id,
+            "moduleId": {"in": module_ids}
+        }
+    )
+    return {theta.moduleId: theta.value for theta in thetas}

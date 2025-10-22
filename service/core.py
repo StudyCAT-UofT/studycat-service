@@ -10,6 +10,7 @@ from db import repo
 from config import settings
 from engine.adapter import _make_test_item, build_multidim_model, choose_next_item
 from adaptivetesting.models import ItemPool, TestItem
+from models.multidimensional import MultidimensionalModel
 
 
 @dataclass
@@ -42,18 +43,18 @@ def _build_item_pools(items) -> Tuple[List[str], Dict[str, ItemPool], Dict[TestI
     testitem_to_skill: Dict[TestItem, str] = {}
 
     for it in items:
-        concept = getattr(it, settings.concept_field)
+        module_id = it.moduleId
         # Skip inactive or untagged items
-        if not it.active or not concept:
+        if not it.active or not module_id:
             continue
         # Guard: ensure we have IRT params (ASSUMPTION: non-null a/b/c)
         if it.irtA is None or it.irtB is None or it.irtC is None:
             continue
 
         ti = _make_test_item(a=float(it.irtA), b=float(it.irtB), c=float(it.irtC))
-        by_concept.setdefault(concept, []).append(ti)
+        by_concept.setdefault(module_id, []).append(ti)
         testitem_to_itemid[ti] = it.id
-        testitem_to_skill[ti] = concept
+        testitem_to_skill[ti] = module_id
 
     concepts = sorted(by_concept.keys())
     pools = {c: ItemPool(lst) for c, lst in by_concept.items()}
@@ -65,7 +66,7 @@ def _public_item_payload(db_item) -> PublicItem:
     options = sorted(db_item.options, key=lambda o: o.label if isinstance(o.label, str) else o.label.name)
     return PublicItem(
         item_id=db_item.id,
-        skill=getattr(db_item, settings.concept_field),
+        skill=db_item.moduleId,
         stem=db_item.stem,
         options=[opt.text for opt in options],
     )
@@ -112,6 +113,9 @@ async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: 
     # Scope modules if provided; else use all_concepts from pool
     effective_concepts = modules or all_concepts
 
+    # Load existing theta values from database
+    existing_thetas = await repo.get_thetas_for_enrollment(attempt.enrollmentId, effective_concepts)
+
     # Mastery thresholds (uniform default unless provided)
     thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in effective_concepts}
 
@@ -122,6 +126,12 @@ async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: 
         prior_sigma2=prior_sigma2 if prior_sigma2 is not None else settings.prior_sigma2,
         mastery_thresholds=thr,
     )
+
+    # Initialize model with existing theta values if available
+    for concept in effective_concepts:
+        if concept in existing_thetas:
+            # Set the theta value in the model
+            model.models[concept].set_theta(existing_thetas[concept])
 
     # Choose first item
     next_item, chosen_skill = choose_next_item(model)
@@ -194,8 +204,8 @@ async def step_attempt(
         used_response_id = response.id
         # DB has truth for correctness
         is_correct = bool(response.isCorrect)
-        # Identify skill by the item's module
-        skill = getattr(response.item, settings.concept_field)
+        # Identify skill by the item's moduleId
+        skill = response.item.moduleId
         # Find the TestItem in the model that matches this response
         prev_ti = _find_test_item_by_irt_params(
             model, 
@@ -216,7 +226,7 @@ async def step_attempt(
         if not correct_opt:
             raise ValueError("Item has no correct option in DB")
         is_correct = (_label_from_index(answer_index) == correct_opt.label)
-        skill = getattr(db_item, settings.concept_field)
+        skill = db_item.moduleId
         # Find the TestItem in the model that matches this item
         prev_ti = _find_test_item_by_irt_params(
             model, 
@@ -233,6 +243,10 @@ async def step_attempt(
     # Compute current theta and naive mastery
     theta = {s: m.get_theta() for s, m in model.models.items()}
     mastery = {s: (theta[s] >= thr[s]) for s in theta}
+
+    # Persist theta values to database
+    for module_id, theta_value in theta.items():
+        await repo.upsert_theta(attempt.enrollmentId, module_id, theta_value)
 
     # Pick next item
     next_item, chosen_skill = choose_next_item(model)

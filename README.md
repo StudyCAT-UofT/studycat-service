@@ -143,9 +143,9 @@ curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/step" \
 ### Data Flow
 
 1. **Core Backend** creates Attempt and Response records
-2. **Quiz Engine** validates attempts and fetches eligible items
+2. **Quiz Engine** validates attempts and fetches eligible items by module
 3. **IRT Models** select optimal next questions based on ability estimates
-4. **Engine** updates theta values and persists snapshots
+4. **Engine** updates theta values, persists to database, and stores snapshots
 5. **API** returns next question and updated ability estimates
 
 ### IRT Integration

@@ -18,9 +18,6 @@ class Settings(BaseModel):
     # DB connection (Prisma uses DATABASE_URL env var; see db/client.py)
     prisma_log_queries: bool = False
 
-    # Concept mapping (MVP: Item.module acts as "skill")
-    concept_field: str = "module"  # CHECK if you later rename the schema field
-
     # Default priors for theta (per concept) if not present in DB
     prior_mu: float = 0.0
     prior_sigma2: float = 1.0
