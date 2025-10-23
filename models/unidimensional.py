@@ -84,6 +84,10 @@ class UnidimensionalModel:
         """Return the current ability estimate (theta)."""
         return self.adaptive_test.ability_level
 
+    def set_theta(self, theta: float) -> None:
+        """Set the current ability estimate (theta)."""
+        self.adaptive_test.ability_level = theta
+
     def get_skill(self) -> str:
         """Return the skill this model is tracking."""
         return self.skill

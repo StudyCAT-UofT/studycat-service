@@ -1,12 +1,29 @@
-# studycat-service
+# StudyCAT Quiz Engine Service
 
-Repository for the CAT service for StudyCAT.
+A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a PostgreSQL database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
 
-## Database setup
 
-The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in the .env file in the root directory.
+## API Endpoints
 
-### Getting started
+### Health Check
+- `GET /v1/health` - Service health status
+
+### Quiz Management
+- `POST /v1/attempts/{attempt_id}/init` - Initialize a quiz attempt and get first question
+- `POST /v1/attempts/{attempt_id}/step` - Process response and get next question
+
+## Quick Start
+
+### Prerequisites
+
+1. **Python 3.13+**
+2. **PostgreSQL database** (see Database Setup below)
+3. **Environment variables** (see Configuration below)
+
+### Details
+
+The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in 
+the .env file in the root directory.
 
 For local development, duplicate the .env.example file in the root directory and name it .env
 
@@ -16,95 +33,176 @@ Both the StudyCAT quiz engine (`studycat-service`) and the StudyCAT web applicat
 
 This repository installs the `studycat-schema` repository as a submodule.
 
-When cloning the repository for the first time, to setup the submodule, run the following command in the root directory of this repository:
+### Installation
 
-```bash
-git submodule update --init --recursive
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd studycat-service
+   ```
 
-Make sure you have the Prisma pip package installed. You can install it by running the following command:
-
-```bash
-pip install -U prisma
-```
-
-To use Prisma, you need to generate the Prisma client. You can generate the client by running the following command in the root directory of this repository:
-
-```bash
-python -m prisma generate --schema external/studycat-schema/schema.prisma --generator py
-```
-
-### Development workflow
-
-When pulling the latest changes from the repository, to update the submodule to the latest version, run the following command in the root directory of this repository:
-
-```bash
-git submodule update --remote
-```
-
-Regenerate the Prisma client when making changes to the schema by running the following command in the root directory of this repository:
-
-```bash
-python -m prisma generate --schema external/studycat-schema/schema.prisma --generator py
-```
-
-To connect to the database, you can use the `db` client in the `db` directory. You can use the `db` client to query the database.
-
-```python
-from db.client import db
-```
-
-## Hardcoded Version (For Frontend Development)
-
-This repository includes a hardcoded version of the service that returns mock data without requiring database setup. This is useful for frontend development and testing API endpoints.
-
-### Quick Start (Hardcoded Version)
-
-1. **Install dependencies:**
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Start the service:**
+3. **Set up database submodule:**
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+4. **Generate Prisma client:**
+   ```bash
+   python -m prisma generate --schema external/studycat-schema/schema.prisma --generator py
+   ```
+
+5. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database connection details
+   ```
+
+6. **Start the service:**
    ```bash
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-3. **Test the endpoints:**
+
+
+### Test Database Connection
+
+```bash
+python db/test_db.py
+```
+
+## API Usage Examples
+
+### Initialize Quiz Attempt
+
+```bash
+curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/init" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "modules": ["Testing", "Architecture"],
+    "prior_mu": 0.0,
+    "prior_sigma2": 1.0
+  }'
+```
+
+**Response:**
+```json
+{
+  "theta": {"Testing": 0.0, "Architecture": 0.0},
+  "next_item": {
+    "item_id": "item_123",
+    "skill": "Testing",
+    "stem": "What is the primary purpose of unit testing?",
+    "options": ["Option A", "Option B", "Option C", "Option D"]
+  },
+  "next_action": "CONTINUE"
+}
+```
+
+### Process Response
+
+```bash
+curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/step" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "response_id": "response_456"
+  }'
+```
+
+**Response:**
+```json
+{
+  "theta": {"Testing": 0.5, "Architecture": 0.2},
+  "mastery": {"Testing": true, "Architecture": false},
+  "next_action": "CONTINUE",
+  "next_item": {
+    "item_id": "item_789",
+    "skill": "Architecture",
+    "stem": "Design a microservices architecture...",
+    "options": ["Option A", "Option B", "Option C", "Option D"]
+  }
+}
+```
+
+## Architecture
+
+### Core Components
+
+- **`main.py`** - FastAPI application with database lifespan management
+- **`routers.py`** - API route definitions and request/response handling
+- **`schemas.py`** - Pydantic models for request/response validation
+- **`service/core.py`** - Main business logic and IRT model integration
+- **`db/repo.py`** - Database repository layer with Prisma queries
+- **`engine/adapter.py`** - IRT model adapter and item selection logic
+- **`models/`** - IRT model implementations (Unidimensional/Multidimensional)
+
+### Data Flow
+
+1. **Core Backend** creates Attempt and Response records
+2. **Quiz Engine** validates attempts and fetches eligible items by module
+3. **IRT Models** select optimal next questions based on ability estimates
+4. **Engine** updates theta values, persists to database, and stores snapshots
+5. **API** returns next question and updated ability estimates
+
+### IRT Integration
+
+The service implements:
+- **Unidimensional IRT**: Single ability estimation per skill
+- **Multidimensional IRT**: Multiple correlated abilities
+- **Bayesian Estimation**: Uses BayesModal with NormalPrior
+- **Item Selection**: Maximum Information Criterion for optimal selection
+
+## Development
+
+### Project Structure
+
+```
+studycat-service/
+├── main.py                 # FastAPI application
+├── routers.py              # API routes
+├── schemas.py              # Pydantic models
+├── requirements.txt        # Python dependencies
+├── service/
+│   ├── core.py            # Main business logic
+├── db/
+│   ├── client.py          # Prisma client
+│   ├── repo.py            # Database queries
+│   └── test_db.py         # Database testing
+├── engine/
+│   └── adapter.py         # IRT model adapter
+├── models/
+│   ├── unidimensional.py  # Unidimensional IRT model
+│   └── multidimensional.py # Multidimensional IRT model
+└── external/
+    └── studycat-schema/   # Database schema (submodule)
+```
+
+### Testing
+
+1. **Database Connection Test:**
    ```bash
-   # Health check
-   curl -X GET "http://localhost:8000/v1/health"
-   
-   # Initialize an attempt
-   curl -X POST "http://localhost:8000/v1/attempt/init" \
-     -H "Content-Type: application/json" \
-     -d '{"attempt_id": "test_001"}'
-   
-   # Answer a question
-   curl -X POST "http://localhost:8000/v1/attempt/step" \
-     -H "Content-Type: application/json" \
-     -d '{"attempt_id": "test_001", "item_id": "item_001", "answer_index": 0}'
+   python db/test_db.py
    ```
 
-### API Endpoints (Hardcoded Version)
+2. **API Testing:**
+   ```bash
+   # Start service
+   uvicorn main:app --reload
+   
+   # Test health endpoint
+   curl -X GET "http://localhost:8000/v1/health"
+   
+   # Test with real database data
+   # (Use existing attempt IDs from your database)
+   ```
 
-- `GET /v1/health` - Health check endpoint
-- `POST /v1/attempt/init` - Initialize a new quiz attempt
-- `POST /v1/attempt/step` - Submit an answer and get the next question
 
-### Sample Data
 
-The hardcoded version includes 5 sample questions. The service tracks attempt state in memory and provides a simple progression through the questions.
 
-### Switching Between Versions
 
-- **Hardcoded version**: Uses `service/core_hardcoded.py` (current default)
-- **Database version**: Uses `service/core.py` (TODO: requires database setup)
 
-To switch to the database version (not yet implemented), update the import in `routers.py`:
-```python
-# Change this line in routers.py
-from service.core_hardcoded import init_attempt, step_attempt, PublicItem
-# To this:
-from service.core import init_attempt, step_attempt, PublicItem
-```
+
