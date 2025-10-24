@@ -2,13 +2,14 @@
 
 A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a PostgreSQL database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
 
-
 ## API Endpoints
 
 ### Health Check
+
 - `GET /v1/health` - Service health status
 
 ### Quiz Management
+
 - `POST /v1/attempts/{attempt_id}/init` - Initialize a quiz attempt and get first question
 - `POST /v1/attempts/{attempt_id}/step` - Process response and get next question
 
@@ -22,7 +23,7 @@ A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) mo
 
 ### Details
 
-The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in 
+The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in
 the .env file in the root directory.
 
 For local development, duplicate the .env.example file in the root directory and name it .env
@@ -36,27 +37,32 @@ This repository installs the `studycat-schema` repository as a submodule.
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository-url>
    cd studycat-service
    ```
 
-2. **Install dependencies:**
+2. **Create virtual environment and install dependencies:**
+
    ```bash
-   pip install -r requirements.txt
+   make venv install
    ```
 
 3. **Set up database submodule:**
+
    ```bash
-   git submodule update --init --recursive
+   make submodule-update
    ```
 
 4. **Generate Prisma client:**
+
    ```bash
-   python -m prisma generate --schema external/studycat-schema/schema.prisma --generator py
+   make db-generate
    ```
 
 5. **Configure environment:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your database connection details
@@ -64,10 +70,8 @@ This repository installs the `studycat-schema` repository as a submodule.
 
 6. **Start the service:**
    ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   make run
    ```
-
-
 
 ### Test Database Connection
 
@@ -90,9 +94,10 @@ curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/init" \
 ```
 
 **Response:**
+
 ```json
 {
-  "theta": {"Testing": 0.0, "Architecture": 0.0},
+  "theta": { "Testing": 0.0, "Architecture": 0.0 },
   "next_item": {
     "item_id": "item_123",
     "skill": "Testing",
@@ -114,10 +119,11 @@ curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/step" \
 ```
 
 **Response:**
+
 ```json
 {
-  "theta": {"Testing": 0.5, "Architecture": 0.2},
-  "mastery": {"Testing": true, "Architecture": false},
+  "theta": { "Testing": 0.5, "Architecture": 0.2 },
+  "mastery": { "Testing": true, "Architecture": false },
   "next_action": "CONTINUE",
   "next_item": {
     "item_id": "item_789",
@@ -151,6 +157,7 @@ curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/step" \
 ### IRT Integration
 
 The service implements:
+
 - **Unidimensional IRT**: Single ability estimation per skill
 - **Multidimensional IRT**: Multiple correlated abilities
 - **Bayesian Estimation**: Uses BayesModal with NormalPrior
@@ -184,25 +191,20 @@ studycat-service/
 ### Testing
 
 1. **Database Connection Test:**
+
    ```bash
    python db/test_db.py
    ```
 
 2. **API Testing:**
+
    ```bash
    # Start service
    uvicorn main:app --reload
-   
+
    # Test health endpoint
    curl -X GET "http://localhost:8000/v1/health"
-   
+
    # Test with real database data
    # (Use existing attempt IDs from your database)
    ```
-
-
-
-
-
-
-
