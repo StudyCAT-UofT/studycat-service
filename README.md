@@ -52,7 +52,7 @@ This repository installs the `studycat-schema` repository as a submodule.
 3. **Set up database submodule:**
 
    ```bash
-   git submodule update --init --recursive
+   make submodule-update
    ```
 
 4. **Generate Prisma client:**
