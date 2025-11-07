@@ -28,7 +28,14 @@ def health() -> dict:
 def _map_public_item(p: PublicItem | None) -> ItemPayload | None:
     if not p:
         return None
-    return ItemPayload(item_id=p.item_id, skill=p.skill, stem=p.stem, options=p.options)
+    return ItemPayload(
+        item_id=p.item_id,
+        skill=p.skill,
+        stem=p.stem,
+        options=p.options,
+        figure_url=p.figure_url,
+        reference=p.reference
+    )
 
 
 @router.post("/attempts/{attempt_id}/init", response_model=AttemptInitResponse)

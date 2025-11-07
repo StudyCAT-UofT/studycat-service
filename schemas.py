@@ -29,6 +29,8 @@ class ItemPayload(BaseModel):
     skill: str                                   # concept/module chosen for this item
     stem: str
     options: List[str]                           # Option texts in label order A..D
+    figure_url: Optional[str] = None
+    reference: Optional[str] = None
 
 
 class AttemptInitResponse(BaseModel):
