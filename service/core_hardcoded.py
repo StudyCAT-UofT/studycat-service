@@ -15,6 +15,8 @@ class PublicItem:
     skill: str
     stem: str
     options: List[str]
+    figure_url: Optional[str] = None
+    reference: Optional[str] = None
 
 
 # Hardcoded sample data

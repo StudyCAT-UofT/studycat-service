@@ -19,6 +19,8 @@ class PublicItem:
     skill: str
     stem: str
     options: List[str]
+    figure_url: Optional[str] = None
+    reference: Optional[str] = None
 
 
 def _label_from_index(idx: int) -> OptionLabel:
@@ -69,6 +71,8 @@ def _public_item_payload(db_item) -> PublicItem:
         skill=db_item.moduleId,
         stem=db_item.stem,
         options=[opt.text for opt in options],
+        figure_url=getattr(db_item, "figureUrl", None),
+        reference=getattr(db_item, "reference", None),
     )
 
 
