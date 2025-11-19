@@ -15,6 +15,10 @@ lint: venv install
 	@source .venv/bin/activate && ruff check .
 	@echo "✅ Linting passed."
 
+lint-fix: venv install
+	@source .venv/bin/activate && ruff check --fix .
+	@echo "✅ Linting issues fixed."
+
 db-generate: venv install
 	@source .venv/bin/activate && prisma generate --schema external/studycat-schema/schema.prisma --generator py
 	@echo "✅ Prisma client generated."
