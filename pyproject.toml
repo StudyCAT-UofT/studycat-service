@@ -1,6 +1,6 @@
 [tool.ruff]
-# Set the maximum line length to 100
-line-length = 100
+# Set the maximum line length to 99
+line-length = 99
 
 # Exclude common directories
 exclude = [

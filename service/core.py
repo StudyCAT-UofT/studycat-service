@@ -134,7 +134,10 @@ async def init_attempt(
     effective_concepts = modules or all_concepts
 
     # Load existing theta values from database
-    existing_thetas = await repo.get_thetas_for_enrollment(attempt.enrollmentId, effective_concepts)
+    existing_thetas = await repo.get_thetas_for_enrollment(
+        attempt.enrollmentId,
+        effective_concepts,
+    )
 
     # Mastery thresholds (uniform default unless provided)
     thr = {
