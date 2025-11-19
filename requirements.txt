@@ -4,3 +4,4 @@ pydantic
 prisma
 python-dotenv
 adaptivetesting
+ruff
