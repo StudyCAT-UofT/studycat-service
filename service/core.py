@@ -35,7 +35,9 @@ def _index_from_label(label: OptionLabel) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}[label.name]
 
 
-def _build_item_pools(items) -> tuple[list[str], dict[str, ItemPool], dict[TestItem, str], dict[TestItem, str]]:
+def _build_item_pools(
+        items
+    ) -> tuple[list[str], dict[str, ItemPool], dict[TestItem, str], dict[TestItem, str]]:
     """
     Create ItemPools per concept and maintain reverse maps:
     - testitem_to_itemid: map TestItem -> DB Item.id
@@ -66,7 +68,10 @@ def _build_item_pools(items) -> tuple[list[str], dict[str, ItemPool], dict[TestI
 
 def _public_item_payload(db_item) -> PublicItem:
     # Order options by label A..D
-    options = sorted(db_item.options, key=lambda o: o.label if isinstance(o.label, str) else o.label.name)
+    options = sorted(
+        db_item.options,
+        key=lambda o: o.label if isinstance(o.label, str) else o.label.name,
+    )
     return PublicItem(
         item_id=db_item.id,
         skill=db_item.moduleId,
@@ -89,9 +94,14 @@ def _snapshot_payload(theta: dict[str, float], mastery: dict[str, bool]) -> str:
     return json.dumps(snapshot)
 
 
-def _find_test_item_by_irt_params(model: MultidimensionalModel, a: float, b: float, c: float) -> TestItem | None:
+def _find_test_item_by_irt_params(
+        model: MultidimensionalModel,
+        a: float,
+        b: float,
+        c: float,
+    ) -> TestItem | None:
     """Find a TestItem in the model's pools that matches the given IRT parameters."""
-    for skill, uni_model in model.models.items():
+    for _, uni_model in model.models.items():
         for test_item in uni_model.adaptive_test.item_pool.test_items:
             if (abs(test_item.a - a) < 0.001 and
                 abs(test_item.b - b) < 0.001 and
@@ -102,7 +112,12 @@ def _find_test_item_by_irt_params(model: MultidimensionalModel, a: float, b: flo
 
 # ---- Orchestration -----------------------------------------------------------
 
-async def init_attempt(attempt_id: str, modules: list[str] | None, prior_mu: float | None, prior_sigma2: float | None) -> tuple[dict[str, float], PublicItem | None]:
+async def init_attempt(
+    attempt_id: str,
+    modules: list[str] | None,
+    prior_mu: float | None,
+    prior_sigma2: float | None
+) -> tuple[dict[str, float], PublicItem | None]:
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
         raise ValueError("Unknown attempt_id")
@@ -122,7 +137,10 @@ async def init_attempt(attempt_id: str, modules: list[str] | None, prior_mu: flo
     existing_thetas = await repo.get_thetas_for_enrollment(attempt.enrollmentId, effective_concepts)
 
     # Mastery thresholds (uniform default unless provided)
-    thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in effective_concepts}
+    thr = {
+        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
+        for c in effective_concepts
+    }
 
     model = build_multidim_model(
         concepts=effective_concepts,
@@ -170,13 +188,13 @@ async def step_attempt(
 ) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool]:
     """
     Process a response and return the next item.
-    
+
     Args:
         attempt_id: Unique identifier for the attempt
         response_id: ID of the Response record created by Core Backend
         item_id: Fallback item ID if Response lookup fails
         answer_index: Fallback answer index if Response lookup fails
-    
+
     Returns:
         Tuple of (theta values, mastery values, next item, is_finished)
     """
@@ -192,7 +210,10 @@ async def step_attempt(
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
-    thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in concepts}
+    thr = {
+        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
+        for c in concepts
+    }
     model = build_multidim_model(
         concepts=concepts,
         pools_by_concept=pools,

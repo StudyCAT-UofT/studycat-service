@@ -39,7 +39,7 @@ def _read_csv(path: Path) -> pd.DataFrame:
     try:
         return pd.read_csv(path)
     except Exception as e:
-        raise DatasetLoadError(f"Failed to read CSV {path!s}: {e!r}")
+        raise DatasetLoadError(f"Failed to read CSV {path!s}: {e!r}") from e
 
 
 def _read_excel(path: Path, sheet: str | int | None) -> pd.DataFrame:
@@ -48,7 +48,7 @@ def _read_excel(path: Path, sheet: str | int | None) -> pd.DataFrame:
     try:
         return pd.read_excel(path, sheet_name=effective)
     except Exception as e:
-        raise DatasetLoadError(f"Failed to read Excel {path!s}: {e!r}")
+        raise DatasetLoadError(f"Failed to read Excel {path!s}: {e!r}") from e
 
 
 def _validate_required_columns(df: pd.DataFrame, required: Sequence[str] | None) -> None:

@@ -28,7 +28,10 @@ async def get_quiz(quiz_id: str) -> Quiz | None:
     )
 
 
-async def mark_attempt_finished(attempt_id: str, engine_mastery_at_finish: dict[str, Any] | None = None) -> None:
+async def mark_attempt_finished(
+        attempt_id: str,
+        engine_mastery_at_finish: dict[str, Any] | None = None,
+    ) -> None:
     await db.attempt.update(
         where={"id": attempt_id},
         data={
@@ -106,7 +109,6 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> list[Item]:
         where=where_clause,
         include={"options": True}
     )
-    filter_ids = {it.id for it in filter_items}
 
     # De-dup union
     if explicit_ids:
@@ -114,7 +116,10 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> list[Item]:
             where={"id": {"in": explicit_ids}},
             include={"options": True}
         )
-        items = explicit_items + [it for it in filter_items if it.id not in {ei.id for ei in explicit_items}]
+        explicit_item_ids = {ei.id for ei in explicit_items}
+        items = explicit_items + [
+            it for it in filter_items if it.id not in explicit_item_ids
+        ]
     else:
         items = filter_items
 

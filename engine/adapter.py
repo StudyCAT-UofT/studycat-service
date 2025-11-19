@@ -54,7 +54,10 @@ def build_multidim_model(
             item_pool=pool,
             initial_theta=prior_mu,
             ability_estimator=BayesModal,
-            estimator_args={"prior": NormalPrior(prior_mu, prior_sigma2), "optimization_interval": (-4, 4)},
+            estimator_args={
+                "prior": NormalPrior(prior_mu, prior_sigma2),
+                "optimization_interval": (-4, 4),
+            },
             item_selector=maximum_information_criterion,
             item_selector_args={}
         )

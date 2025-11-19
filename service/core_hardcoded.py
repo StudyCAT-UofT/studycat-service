@@ -117,13 +117,13 @@ async def init_attempt(
 ) -> tuple[dict[str, float], PublicItem | None]:
     """
     Initialize an attempt and return the first item.
-    
+
     Args:
         attempt_id: Unique identifier for the attempt
         concepts: List of concepts to test (ignored in hardcoded version)
         prior_mu: Prior mean (ignored in hardcoded version)
         prior_sigma2: Prior variance (ignored in hardcoded version)
-    
+
     Returns:
         Tuple of (theta values, first item)
     """
@@ -146,12 +146,12 @@ async def step_attempt(
 ) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool]:
     """
     Process a response and return the next item.
-    
+
     Args:
         attempt_id: Unique identifier for the attempt
         item_id: ID of the item that was answered (ignored in hardcoded version)
         answer_index: Index of the selected answer (ignored in hardcoded version)
-    
+
     Returns:
         Tuple of (theta values, mastery values, next item, is_finished)
     """

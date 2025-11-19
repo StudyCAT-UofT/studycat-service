@@ -1,7 +1,8 @@
 """
 Seeding functions for creating test data in the database.
 
-These functions can be used to seed the database with test data for development and testing purposes.
+These functions can be used to seed the database with test data for development
+and testing purposes.
 """
 from __future__ import annotations
 
