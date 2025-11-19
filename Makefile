@@ -29,3 +29,11 @@ submodule-update:
 
 run: venv install db-generate submodule-update
 	@source .venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+test: venv install
+	@source .venv/bin/activate && pytest tests/ -v
+	@echo "✅ Tests passed."
+
+test-coverage: venv install
+	@source .venv/bin/activate && pytest tests/ --cov=service --cov-report=term-missing --cov-report=html
+	@echo "✅ Coverage report generated. Open htmlcov/index.html to view."
