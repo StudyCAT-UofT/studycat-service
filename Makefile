@@ -35,5 +35,5 @@ test: venv install
 	@echo "✅ Tests passed."
 
 test-coverage: venv install
-	@source .venv/bin/activate && pytest tests/ --cov=service --cov-report=term-missing --cov-report=html
+	@source .venv/bin/activate && pytest tests/ --cov=. --cov-report=term-missing --cov-report=html
 	@echo "✅ Coverage report generated. Open htmlcov/index.html to view."
