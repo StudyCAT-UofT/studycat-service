@@ -7,8 +7,8 @@ ASSUMPTIONS / CHECK:
 - Mastery thresholds are static defaults for now; can later be read per concept/course.
 """
 from __future__ import annotations
+
 from pydantic import BaseModel, Field
-from typing import Dict, List
 
 
 class Settings(BaseModel):
@@ -23,7 +23,7 @@ class Settings(BaseModel):
     prior_sigma2: float = 1.0
 
     # Simple mastery thresholds by concept (uniform default). Later: load per course.
-    mastery_thresholds: Dict[str, float] = Field(default_factory=dict)
+    mastery_thresholds: dict[str, float] = Field(default_factory=dict)
     default_mastery_threshold: float = 1.0
 
     # Whether to return FINISH instead of 404 when pool exhausted (per your requirement)

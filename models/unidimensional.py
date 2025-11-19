@@ -1,9 +1,10 @@
+from typing import Any
+
 from adaptivetesting.implementations import TestAssembler
-from adaptivetesting.models import TestItem, ItemPool, ItemSelectionException
 from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, ItemSelectionException, TestItem
 from adaptivetesting.services import IEstimator, ItemSelectionStrategy
-from typing import Type, Any
 
 
 class UnidimensionalModel:
@@ -29,7 +30,7 @@ class UnidimensionalModel:
         mastery_threshold: float,
         item_pool: ItemPool,
         initial_theta: float = 0.0,
-        ability_estimator: Type[IEstimator] = BayesModal,
+        ability_estimator: type[IEstimator] = BayesModal,
         estimator_args: dict[str, Any] | None = None,
         item_selector: ItemSelectionStrategy = maximum_information_criterion,
         item_selector_args: dict[str, Any] | None = None,
@@ -100,7 +101,7 @@ class UnidimensionalModel:
         """
         Ask the underlying TestAssembler to select the next best item.
         """
-        try: 
+        try:
             return self.adaptive_test.get_next_item()
         except ItemSelectionException:
             # no items left in the item pool

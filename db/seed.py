@@ -4,15 +4,18 @@ Seeding functions for creating test data in the database.
 These functions can be used to seed the database with test data for development and testing purposes.
 """
 from __future__ import annotations
-from typing import Any, Dict
+
 import asyncio
-from prisma.models import Attempt, Response, Item, Quiz
-from prisma.enums import AttemptStatus, OptionLabel, BloomCategory
+from typing import Any
+
+from prisma.enums import AttemptStatus, BloomCategory, OptionLabel
+from prisma.models import Attempt, Item, Quiz, Response
+
 from db.client import db
 from db.repo import get_item_by_id
 
 
-async def create_quiz(quiz_data: Dict[str, Any]) -> Quiz:
+async def create_quiz(quiz_data: dict[str, Any]) -> Quiz:
     """Create a new quiz for testing."""
     return await db.quiz.create(
         data={
@@ -27,7 +30,7 @@ async def create_quiz(quiz_data: Dict[str, Any]) -> Quiz:
     )
 
 
-async def create_item(item_data: Dict[str, Any]) -> Item:
+async def create_item(item_data: dict[str, Any]) -> Item:
     """Create a new item for testing."""
     # Create the item first
     item = await db.item.create(
@@ -44,7 +47,7 @@ async def create_item(item_data: Dict[str, Any]) -> Item:
             "active": True
         }
     )
-    
+
     # Create options
     for option_data in item_data["options"]:
         await db.itemoption.create(
@@ -55,12 +58,12 @@ async def create_item(item_data: Dict[str, Any]) -> Item:
                 "isCorrect": option_data["isCorrect"]
             }
         )
-    
+
     # Return item with options
     return await get_item_by_id(item.id)
 
 
-async def create_attempt(attempt_data: Dict[str, Any]) -> Attempt:
+async def create_attempt(attempt_data: dict[str, Any]) -> Attempt:
     """Create a new attempt for testing."""
     return await db.attempt.create(
         data={
@@ -74,13 +77,13 @@ async def create_attempt(attempt_data: Dict[str, Any]) -> Attempt:
     )
 
 
-async def create_response(response_data: Dict[str, Any]) -> Response:
+async def create_response(response_data: dict[str, Any]) -> Response:
     """Create a new response for testing."""
     # Convert answerIndex to OptionLabel
     answer_index = response_data["answerIndex"]
     option_labels = ["A", "B", "C", "D"]
     selected_label = option_labels[answer_index] if 0 <= answer_index < len(option_labels) else "A"
-    
+
     return await db.response.create(
         data={
             "id": response_data["id"],
@@ -100,7 +103,7 @@ async def main():
     try:
         await db.connect()
         print("✓ Connected to database")
-        
+
         # Example usage - users can customize this section
         print("\nSeeding functions are available. Use them in your own scripts:")
         print("  - create_quiz(quiz_data)")
@@ -110,7 +113,7 @@ async def main():
         print("\nExample:")
         print("  from db.seed import create_quiz, create_item")
         print("  await create_quiz({...})")
-        
+
     except Exception as e:
         print(f"✗ Error: {e}")
         raise

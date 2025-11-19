@@ -7,18 +7,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
 
 import pandas as pd
 
 from config import settings
 from dataset_loader import (
-    load_dataset,
-    DatasetValidationError,
     DEFAULT_OPTION_LABELS,
+    DatasetValidationError,
+    load_dataset,
 )
 
-OPTION_LABELS: Tuple[str, ...] = DEFAULT_OPTION_LABELS
+OPTION_LABELS: tuple[str, ...] = DEFAULT_OPTION_LABELS
 _CORRECT_INDEX_COLUMN = "__correct_index"
 _REQUIRED_COLUMNS = [
     "Module",
@@ -48,7 +48,7 @@ class ItemRecord:
     irt_a: float | None
     irt_b: float | None
     irt_c: float | None
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 def _is_missing(value: Any) -> bool:
@@ -62,7 +62,7 @@ def _is_missing(value: Any) -> bool:
     return False
 
 
-def _safe_str(value: Any) -> Optional[str]:
+def _safe_str(value: Any) -> str | None:
     if _is_missing(value):
         return None
     text = str(value).strip()
@@ -75,7 +75,7 @@ def _option_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _float_or_none(value: Any) -> Optional[float]:
+def _float_or_none(value: Any) -> float | None:
     if _is_missing(value):
         return None
     try:
@@ -84,7 +84,7 @@ def _float_or_none(value: Any) -> Optional[float]:
         return None
 
 
-def _int_or_none(value: Any) -> Optional[int]:
+def _int_or_none(value: Any) -> int | None:
     if _is_missing(value):
         return None
     try:
@@ -93,7 +93,7 @@ def _int_or_none(value: Any) -> Optional[int]:
         return None
 
 
-def _parse_average(value: Any) -> Optional[float]:
+def _parse_average(value: Any) -> float | None:
     if _is_missing(value):
         return None
     if isinstance(value, str):
@@ -118,9 +118,9 @@ def _parse_average(value: Any) -> Optional[float]:
 
 
 class Dataset:
-    def __init__(self, path: Optional[Path] = None) -> None:
+    def __init__(self, path: Path | None = None) -> None:
         self._path = path or settings.DATASET_PATH
-        self._df: Optional[pd.DataFrame] = None
+        self._df: pd.DataFrame | None = None
         self._by_id: dict[str, ItemRecord] = {}
 
     @property
@@ -157,7 +157,7 @@ class Dataset:
             options = [_option_text(row.get(f"Response_{label}")) for label in OPTION_LABELS]
             concept = _safe_str(row.get("Module"))
 
-            metadata: Dict[str, Any] = {
+            metadata: dict[str, Any] = {
                 "reference": _safe_str(row.get("Reference")),
                 "bloom_category": _safe_str(row.get("Bloom_Cat")),
                 "figure": _safe_str(row.get("Figure")),
@@ -196,7 +196,7 @@ class Dataset:
         _ = self.df
         return self._by_id.get(item_id)
 
-    def items_by_concepts(self, concepts: Optional[list[str]]) -> list[ItemRecord]:
+    def items_by_concepts(self, concepts: list[str] | None) -> list[ItemRecord]:
         _ = self.df
         if not concepts:
             return list(self._by_id.values())

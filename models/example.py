@@ -1,11 +1,11 @@
-from adaptivetesting.models import ItemPool, TestItem
-from adaptivetesting.math.estimators import BayesModal, NormalPrior
-from adaptivetesting.math.item_selection import maximum_information_criterion
 import random
 import uuid
 
-from unidimensional import UnidimensionalModel
+from adaptivetesting.math.estimators import BayesModal, NormalPrior
+from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, TestItem
 from multidimensional import MultidimensionalModel
+from unidimensional import UnidimensionalModel
 
 
 def create_dummy_pool(skill_name: str, num_items: int = 5) -> ItemPool:
@@ -55,7 +55,7 @@ def demo_unidimensional():
     print(f"Initial theta for Math: {math_model.get_theta():.2f}")
 
     # Simulate answering 6 questions
-    # Mastery should be reached at some point. 
+    # Mastery should be reached at some point.
     # Only 5 questions in the ItemPool, so the last item will be None
     for i in range(6):
         item = math_model.get_next_item()
