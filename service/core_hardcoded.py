@@ -116,7 +116,7 @@ async def init_attempt(
     prior_sigma2: float | None
 ) -> tuple[dict[str, float], PublicItem | None]:
     """
-    Initialize an attempt and return the first item.askdfhlkashdflkahskdfhkjlasdhflkahsdkfhlkashdfkahskdfhkashfkashdf
+    Initialize an attempt and return the first item.
 
     Args:
         attempt_id: Unique identifier for the attempt
