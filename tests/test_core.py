@@ -8,8 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from prisma.enums import OptionLabel
 
-from service.core import _label_from_index, _index_from_label, init_attempt
-
+from service.core import _index_from_label, _label_from_index, init_attempt
 
 # ============================================================================
 # Helper Function Tests
