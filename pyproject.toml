@@ -33,3 +33,9 @@ ignore = []
 [tool.ruff.lint.isort]
 known-first-party = ["studycat"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
