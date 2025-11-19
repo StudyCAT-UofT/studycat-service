@@ -1,5 +1,5 @@
-from adaptivetesting.models import ItemPool
 import pandas as pd
+from adaptivetesting.models import ItemPool
 
 
 def df_to_ip(df: pd.DataFrame) -> list[tuple[str, ItemPool]]:
@@ -8,10 +8,12 @@ def df_to_ip(df: pd.DataFrame) -> list[tuple[str, ItemPool]]:
     one per unique Module category.
 
     Arguments:
-        - df (pd.DataFrame): A dataframe of the test questions in the format given to us in the first spreadsheet from Prof. De Melo.
+        - df (pd.DataFrame): A dataframe of the test questions in the format given to us in the
+        first spreadsheet from Prof. De Melo.
 
     Returns:
-        - a list of tuples (str, ItemPool) where each tuple contains a module name and an ItemPool of questions from just that module.
+        - a list of tuples (str, ItemPool) where each tuple contains a module name and an ItemPool
+        of questions from just that module.
     """
     pools = []
 

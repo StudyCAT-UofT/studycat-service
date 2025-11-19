@@ -1,11 +1,11 @@
-from adaptivetesting.models import ItemPool, TestItem
-from adaptivetesting.math.estimators import BayesModal, NormalPrior
-from adaptivetesting.math.item_selection import maximum_information_criterion
 import random
 import uuid
 
-from unidimensional import UnidimensionalModel
+from adaptivetesting.math.estimators import BayesModal, NormalPrior
+from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, TestItem
 from multidimensional import MultidimensionalModel
+from unidimensional import UnidimensionalModel
 
 
 def create_dummy_pool(skill_name: str, num_items: int = 5) -> ItemPool:
@@ -16,11 +16,10 @@ def create_dummy_pool(skill_name: str, num_items: int = 5) -> ItemPool:
     roughly centered around 0, spreading across [-3, 3].
     """
     items = []
-    for i in range(num_items):
+    for _ in range(num_items):
         a = round(random.uniform(0.5, 2.0), 2)      # discrimination (slope)
         b = round(random.uniform(-3.0, 3.0), 2)     # difficulty
         c = 0.25                                    # guessing (fixed)
-        item_id = f"{skill_name}_{i+1}"
 
         item = TestItem()
         item.id = uuid.uuid4()
@@ -55,7 +54,7 @@ def demo_unidimensional():
     print(f"Initial theta for Math: {math_model.get_theta():.2f}")
 
     # Simulate answering 6 questions
-    # Mastery should be reached at some point. 
+    # Mastery should be reached at some point.
     # Only 5 questions in the ItemPool, so the last item will be None
     for i in range(6):
         item = math_model.get_next_item()
@@ -69,7 +68,10 @@ def demo_unidimensional():
         response = 1
         math_model.record_response(response, item)
 
-        print(f"Q{i+1}: a={item.a:.2f}, b={item.b:.2f}, response={response}, updated theta={math_model.get_theta():.2f}")
+        print(
+            f"Q{i+1}: a={item.a:.2f}, b={item.b:.2f}, "
+            f"response={response}, updated theta={math_model.get_theta():.2f}"
+        )
 
     print(f"Final estimated Math theta: {math_model.get_theta():.2f}")
 
@@ -107,13 +109,16 @@ def demo_multidimensional():
         skill = skill or "Unknown"
 
         # simulate response (simple heuristic)
-        theta = multi_model.get_theta(skill)
         response = random.randint(0, 1)
 
         # record and update
         multi_model.record_response(skill, response, next_item)
 
-        print(f"Round {round_num + 1}: {skill} | item a={next_item.a:.2f} | item b={next_item.b:.2f} | resp={response} | new theta={multi_model.get_theta(skill):.2f}")
+        print(
+            f"Round {round_num + 1}: {skill} | item a={next_item.a:.2f} | "
+            f"item b={next_item.b:.2f} | resp={response} | "
+            f"new theta={multi_model.get_theta(skill):.2f}"
+        )
 
     print("\nFinal thetas:")
     for skill in multi_model.models:

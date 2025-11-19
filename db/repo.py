@@ -4,30 +4,34 @@ Thin repository wrapper to isolate Prisma queries from the engine logic.
 NOTE: Placeholder -- to be checked and implemented.
 """
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple
-from prisma.models import Attempt, Response, Item, ItemOption, Quiz, Theta, Module
-from prisma.enums import AttemptStatus, OptionLabel, BloomCategory
-from prisma.errors import PrismaError
-from db.client import db
 
+from typing import Any
+
+from prisma.enums import AttemptStatus
+from prisma.models import Attempt, Item, Quiz, Response, Theta
+
+from db.client import db
 
 # -------- Attempts / Quiz --------
 
-async def get_attempt(attempt_id: str) -> Optional[Attempt]:
+async def get_attempt(attempt_id: str) -> Attempt | None:
     return await db.attempt.find_unique(
         where={"id": attempt_id},
         include={"quiz": True, "responses": False}
     )
 
 
-async def get_quiz(quiz_id: str) -> Optional[Quiz]:
+async def get_quiz(quiz_id: str) -> Quiz | None:
     return await db.quiz.find_unique(
         where={"id": quiz_id},
         include=False
     )
 
 
-async def mark_attempt_finished(attempt_id: str, engine_mastery_at_finish: Optional[Dict[str, Any]] = None) -> None:
+async def mark_attempt_finished(
+        attempt_id: str,
+        engine_mastery_at_finish: dict[str, Any] | None = None,
+    ) -> None:
     await db.attempt.update(
         where={"id": attempt_id},
         data={
@@ -39,7 +43,7 @@ async def mark_attempt_finished(attempt_id: str, engine_mastery_at_finish: Optio
 
 # -------- Responses --------
 
-async def list_responses(attempt_id: str) -> List[Response]:
+async def list_responses(attempt_id: str) -> list[Response]:
     # We want ordered history to optionally "replay" into the model if you choose.
     return await db.response.find_many(
         where={"attemptId": attempt_id},
@@ -48,7 +52,7 @@ async def list_responses(attempt_id: str) -> List[Response]:
     )
 
 
-async def get_latest_response_without_snapshot(attempt_id: str) -> Optional[Response]:
+async def get_latest_response_without_snapshot(attempt_id: str) -> Response | None:
     # ASSUMPTION: We consider "without snapshot" as engineMasterySnapshot == None.
     rows = await db.response.find_many(
         where={"attemptId": attempt_id, "engineMasterySnapshot": None},
@@ -59,7 +63,7 @@ async def get_latest_response_without_snapshot(attempt_id: str) -> Optional[Resp
     return rows[0] if rows else None
 
 
-async def get_response_by_id(response_id: str) -> Optional[Response]:
+async def get_response_by_id(response_id: str) -> Response | None:
     """Fetch a specific Response by ID with item and options included."""
     return await db.response.find_unique(
         where={"id": response_id},
@@ -67,7 +71,7 @@ async def get_response_by_id(response_id: str) -> Optional[Response]:
     )
 
 
-async def attach_engine_snapshot_to_response(response_id: str, snapshot: Dict[str, Any]) -> None:
+async def attach_engine_snapshot_to_response(response_id: str, snapshot: dict[str, Any]) -> None:
     await db.response.update(
         where={"id": response_id},
         data={"engineMasterySnapshot": snapshot}
@@ -76,7 +80,7 @@ async def attach_engine_snapshot_to_response(response_id: str, snapshot: Dict[st
 
 # -------- Items (scope) --------
 
-async def list_eligible_items_for_quiz(quiz_id: str) -> List[Item]:
+async def list_eligible_items_for_quiz(quiz_id: str) -> list[Item]:
     """
     Basic scope: union of explicit QuizItem + filter-based selection (modules/blooms).
     This is a minimal example. You might have more constraints later.
@@ -94,7 +98,7 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> List[Item]:
     explicit_ids = [qi.itemId for qi in quiz.quizItems]
 
     # Filter-based scope
-    where_clause: Dict[str, Any] = {"active": True}
+    where_clause: dict[str, Any] = {"active": True}
     if quiz.includedModuleIds:
         where_clause["moduleId"] = {"in": quiz.includedModuleIds}
     if quiz.includedBlooms:
@@ -105,7 +109,6 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> List[Item]:
         where=where_clause,
         include={"options": True}
     )
-    filter_ids = {it.id for it in filter_items}
 
     # De-dup union
     if explicit_ids:
@@ -113,14 +116,17 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> List[Item]:
             where={"id": {"in": explicit_ids}},
             include={"options": True}
         )
-        items = explicit_items + [it for it in filter_items if it.id not in {ei.id for ei in explicit_items}]
+        explicit_item_ids = {ei.id for ei in explicit_items}
+        items = explicit_items + [
+            it for it in filter_items if it.id not in explicit_item_ids
+        ]
     else:
         items = filter_items
 
     return items
 
 
-async def get_item_by_id(item_id: str) -> Optional[Item]:
+async def get_item_by_id(item_id: str) -> Item | None:
     return await db.item.find_unique(
         where={"id": item_id},
         include={"options": True}
@@ -129,7 +135,7 @@ async def get_item_by_id(item_id: str) -> Optional[Item]:
 
 # -------- Additional Helper Functions --------
 
-async def get_quiz_by_id(quiz_id: str) -> Optional[Quiz]:
+async def get_quiz_by_id(quiz_id: str) -> Quiz | None:
     """Get quiz by ID with all related data."""
     return await db.quiz.find_unique(
         where={"id": quiz_id},
@@ -137,7 +143,7 @@ async def get_quiz_by_id(quiz_id: str) -> Optional[Quiz]:
     )
 
 
-async def get_attempt_by_id(attempt_id: str) -> Optional[Attempt]:
+async def get_attempt_by_id(attempt_id: str) -> Attempt | None:
     """Get attempt by ID with all related data."""
     return await db.attempt.find_unique(
         where={"id": attempt_id},
@@ -147,7 +153,7 @@ async def get_attempt_by_id(attempt_id: str) -> Optional[Attempt]:
 
 # -------- Theta Management --------
 
-async def get_theta(enrollment_id: str, module_id: str) -> Optional[Theta]:
+async def get_theta(enrollment_id: str, module_id: str) -> Theta | None:
     """Get existing theta value for a specific enrollment and module."""
     return await db.theta.find_unique(
         where={
@@ -170,7 +176,7 @@ async def upsert_theta(enrollment_id: str, module_id: str, value: float) -> Thet
             }
         }
     )
-    
+
     if existing_theta:
         # Update existing theta
         return await db.theta.update(
@@ -193,7 +199,7 @@ async def upsert_theta(enrollment_id: str, module_id: str, value: float) -> Thet
         )
 
 
-async def get_thetas_for_enrollment(enrollment_id: str, module_ids: List[str]) -> Dict[str, float]:
+async def get_thetas_for_enrollment(enrollment_id: str, module_ids: list[str]) -> dict[str, float]:
     """Get theta values for multiple modules for a specific enrollment."""
     thetas = await db.theta.find_many(
         where={

@@ -2,14 +2,15 @@
 Core orchestration that binds DB state <-> engine adapter.
 """
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple
+
 from dataclasses import dataclass
 
-from prisma.enums import OptionLabel
-from db import repo
-from config import settings
-from engine.adapter import _make_test_item, build_multidim_model, choose_next_item
 from adaptivetesting.models import ItemPool, TestItem
+from prisma.enums import OptionLabel
+
+from config import settings
+from db import repo
+from engine.adapter import _make_test_item, build_multidim_model, choose_next_item
 from models.multidimensional import MultidimensionalModel
 
 
@@ -18,9 +19,9 @@ class PublicItem:
     item_id: str
     skill: str
     stem: str
-    options: List[str]
-    figure_url: Optional[str] = None
-    reference: Optional[str] = None
+    options: list[str]
+    figure_url: str | None = None
+    reference: str | None = None
 
 
 def _label_from_index(idx: int) -> OptionLabel:
@@ -34,15 +35,17 @@ def _index_from_label(label: OptionLabel) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}[label.name]
 
 
-def _build_item_pools(items) -> Tuple[List[str], Dict[str, ItemPool], Dict[TestItem, str], Dict[TestItem, str]]:
+def _build_item_pools(
+        items
+    ) -> tuple[list[str], dict[str, ItemPool], dict[TestItem, str], dict[TestItem, str]]:
     """
     Create ItemPools per concept and maintain reverse maps:
     - testitem_to_itemid: map TestItem -> DB Item.id
     - testitem_to_skill:  map TestItem -> concept/module
     """
-    by_concept: Dict[str, List[TestItem]] = {}
-    testitem_to_itemid: Dict[TestItem, str] = {}
-    testitem_to_skill: Dict[TestItem, str] = {}
+    by_concept: dict[str, list[TestItem]] = {}
+    testitem_to_itemid: dict[TestItem, str] = {}
+    testitem_to_skill: dict[TestItem, str] = {}
 
     for it in items:
         module_id = it.moduleId
@@ -65,7 +68,10 @@ def _build_item_pools(items) -> Tuple[List[str], Dict[str, ItemPool], Dict[TestI
 
 def _public_item_payload(db_item) -> PublicItem:
     # Order options by label A..D
-    options = sorted(db_item.options, key=lambda o: o.label if isinstance(o.label, str) else o.label.name)
+    options = sorted(
+        db_item.options,
+        key=lambda o: o.label if isinstance(o.label, str) else o.label.name,
+    )
     return PublicItem(
         item_id=db_item.id,
         skill=db_item.moduleId,
@@ -76,7 +82,7 @@ def _public_item_payload(db_item) -> PublicItem:
     )
 
 
-def _snapshot_payload(theta: Dict[str, float], mastery: Dict[str, bool]) -> str:
+def _snapshot_payload(theta: dict[str, float], mastery: dict[str, bool]) -> str:
     """
     Persisted on Response.engineMasterySnapshot (JSON).
     Store mastery values as float (0.0-1.0) to match existing data format.
@@ -88,12 +94,17 @@ def _snapshot_payload(theta: Dict[str, float], mastery: Dict[str, bool]) -> str:
     return json.dumps(snapshot)
 
 
-def _find_test_item_by_irt_params(model: 'MultidimensionalModel', a: float, b: float, c: float) -> Optional['TestItem']:
+def _find_test_item_by_irt_params(
+        model: MultidimensionalModel,
+        a: float,
+        b: float,
+        c: float,
+    ) -> TestItem | None:
     """Find a TestItem in the model's pools that matches the given IRT parameters."""
-    for skill, uni_model in model.models.items():
+    for _, uni_model in model.models.items():
         for test_item in uni_model.adaptive_test.item_pool.test_items:
-            if (abs(test_item.a - a) < 0.001 and 
-                abs(test_item.b - b) < 0.001 and 
+            if (abs(test_item.a - a) < 0.001 and
+                abs(test_item.b - b) < 0.001 and
                 abs(test_item.c - c) < 0.001):
                 return test_item
     return None
@@ -101,7 +112,12 @@ def _find_test_item_by_irt_params(model: 'MultidimensionalModel', a: float, b: f
 
 # ---- Orchestration -----------------------------------------------------------
 
-async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: Optional[float], prior_sigma2: Optional[float]) -> Tuple[Dict[str, float], Optional[PublicItem]]:
+async def init_attempt(
+    attempt_id: str,
+    modules: list[str] | None,
+    prior_mu: float | None,
+    prior_sigma2: float | None
+) -> tuple[dict[str, float], PublicItem | None]:
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
         raise ValueError("Unknown attempt_id")
@@ -118,10 +134,16 @@ async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: 
     effective_concepts = modules or all_concepts
 
     # Load existing theta values from database
-    existing_thetas = await repo.get_thetas_for_enrollment(attempt.enrollmentId, effective_concepts)
+    existing_thetas = await repo.get_thetas_for_enrollment(
+        attempt.enrollmentId,
+        effective_concepts,
+    )
 
     # Mastery thresholds (uniform default unless provided)
-    thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in effective_concepts}
+    thr = {
+        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
+        for c in effective_concepts
+    }
 
     model = build_multidim_model(
         concepts=effective_concepts,
@@ -164,18 +186,18 @@ async def init_attempt(attempt_id: str, modules: Optional[List[str]], prior_mu: 
 async def step_attempt(
     attempt_id: str,
     response_id: str,
-    item_id: Optional[str] = None,
-    answer_index: Optional[int] = None
-) -> Tuple[Dict[str, float], Dict[str, bool], Optional[PublicItem], bool]:
+    item_id: str | None = None,
+    answer_index: int | None = None
+) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool]:
     """
     Process a response and return the next item.
-    
+
     Args:
         attempt_id: Unique identifier for the attempt
         response_id: ID of the Response record created by Core Backend
         item_id: Fallback item ID if Response lookup fails
         answer_index: Fallback answer index if Response lookup fails
-    
+
     Returns:
         Tuple of (theta values, mastery values, next item, is_finished)
     """
@@ -191,7 +213,10 @@ async def step_attempt(
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
-    thr = {c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold) for c in concepts}
+    thr = {
+        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
+        for c in concepts
+    }
     model = build_multidim_model(
         concepts=concepts,
         pools_by_concept=pools,
@@ -206,14 +231,14 @@ async def step_attempt(
         # Skip the current response (we'll process it separately)
         if prev_response.id == response_id:
             continue
-            
+
         # Replay previous response
         is_correct = bool(prev_response.isCorrect)
         skill = prev_response.item.moduleId
         prev_ti = _find_test_item_by_irt_params(
-            model, 
-            float(prev_response.item.irtA), 
-            float(prev_response.item.irtB), 
+            model,
+            float(prev_response.item.irtA),
+            float(prev_response.item.irtB),
             float(prev_response.item.irtC)
         )
         if prev_ti:
@@ -221,8 +246,8 @@ async def step_attempt(
 
     # Fetch the Response record by response_id
     response = await repo.get_response_by_id(response_id)
-    used_response_id: Optional[str] = None
-    
+    used_response_id: str | None = None
+
     if response:
         used_response_id = response.id
         # DB has truth for correctness
@@ -231,9 +256,9 @@ async def step_attempt(
         skill = response.item.moduleId
         # Find the TestItem in the model that matches this response
         prev_ti = _find_test_item_by_irt_params(
-            model, 
-            float(response.item.irtA), 
-            float(response.item.irtB), 
+            model,
+            float(response.item.irtA),
+            float(response.item.irtB),
             float(response.item.irtC)
         )
         if prev_ti:
@@ -252,9 +277,9 @@ async def step_attempt(
         skill = db_item.moduleId
         # Find the TestItem in the model that matches this item
         prev_ti = _find_test_item_by_irt_params(
-            model, 
-            float(db_item.irtA), 
-            float(db_item.irtB), 
+            model,
+            float(db_item.irtA),
+            float(db_item.irtB),
             float(db_item.irtC)
         )
         if prev_ti:
@@ -285,7 +310,7 @@ async def step_attempt(
         )
 
     # Build public payload
-    next_public: Optional[PublicItem] = None
+    next_public: PublicItem | None = None
     if next_item:
         # Find the matching DB item by IRT parameters since TestItem objects may not be identical
         for item in items:

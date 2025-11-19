@@ -9,8 +9,9 @@ Load a StudyCAT-style tabular dataset into a pandas.DataFrame.
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence, Dict, Any, Tuple
+from typing import Any
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -30,7 +31,7 @@ class DatasetValidationError(Exception):
 
 
 # --------------------------- Helpers -----------------------------------------
-DEFAULT_OPTION_LABELS: Tuple[str, ...] = ("A", "B", "C", "D")
+DEFAULT_OPTION_LABELS: tuple[str, ...] = ("A", "B", "C", "D")
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
@@ -38,19 +39,19 @@ def _read_csv(path: Path) -> pd.DataFrame:
     try:
         return pd.read_csv(path)
     except Exception as e:
-        raise DatasetLoadError(f"Failed to read CSV {path!s}: {e!r}")
+        raise DatasetLoadError(f"Failed to read CSV {path!s}: {e!r}") from e
 
 
-def _read_excel(path: Path, sheet: Optional[str | int]) -> pd.DataFrame:
+def _read_excel(path: Path, sheet: str | int | None) -> pd.DataFrame:
     """Read an Excel sheet into a DataFrame. Defaults to the first sheet when sheet is None."""
     effective = 0 if sheet is None else sheet
     try:
         return pd.read_excel(path, sheet_name=effective)
     except Exception as e:
-        raise DatasetLoadError(f"Failed to read Excel {path!s}: {e!r}")
+        raise DatasetLoadError(f"Failed to read Excel {path!s}: {e!r}") from e
 
 
-def _validate_required_columns(df: pd.DataFrame, required: Optional[Sequence[str]]) -> None:
+def _validate_required_columns(df: pd.DataFrame, required: Sequence[str] | None) -> None:
     if not required:
         return
     missing = [c for c in required if c not in df.columns]
@@ -73,13 +74,13 @@ def _extract_bold_correct_indices(
     *,
     question_column: str,
     option_labels: Sequence[str],
-) -> Dict[str, int]:
+) -> dict[str, int]:
     workbook = load_workbook(path, data_only=True)
     try:
         sheet = workbook.active
 
         header_cells = next(sheet.iter_rows(min_row=1, max_row=1))
-        header_map: Dict[str, int] = {}
+        header_map: dict[str, int] = {}
         for idx, cell in enumerate(header_cells):
             title = cell.value
             if isinstance(title, str):
@@ -92,7 +93,7 @@ def _extract_bold_correct_indices(
                 f"Missing header(s) for bold detection: {missing_headers}"
             )
 
-        lookup: Dict[str, int] = {}
+        lookup: dict[str, int] = {}
         for row in sheet.iter_rows(min_row=2):
             q_cell = row[header_map[question_column]]
             question_value = q_cell.value
@@ -124,8 +125,8 @@ def _extract_bold_correct_indices(
 def load_dataset(
     path: str | Path | None = None,
     *,
-    required_columns: Optional[Sequence[str]] = None,
-    excel_sheet: Optional[str] = None,
+    required_columns: Sequence[str] | None = None,
+    excel_sheet: str | None = None,
     derive_correct_from_bold: bool = False,
     question_column: str = "Question_ID",
     option_labels: Sequence[str] = DEFAULT_OPTION_LABELS,

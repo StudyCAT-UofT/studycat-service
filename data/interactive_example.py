@@ -4,12 +4,10 @@ from pathlib import Path
 # Add the project root (studycat-service) to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-import pandas as pd
 from load_excel import excel_to_df
 from load_item_pool import df_to_ip
-from models.unidimensional import UnidimensionalModel
+
 from models.multidimensional import MultidimensionalModel
-from adaptivetesting.models import TestItem, ItemPool
 
 
 def run_interactive_cat():

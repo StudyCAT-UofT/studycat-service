@@ -1,5 +1,5 @@
+from adaptivetesting.models import ItemPool, TestItem
 from unidimensional import UnidimensionalModel
-from adaptivetesting.models import TestItem, ItemPool
 
 item1 = TestItem()
 item1.id = 1

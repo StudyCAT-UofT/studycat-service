@@ -6,11 +6,13 @@ LIFECYCLE:
 - Include v1 routes under /v1
 """
 from __future__ import annotations
-from fastapi import FastAPI
+
 from contextlib import asynccontextmanager
 
-from db.client import db
+from fastapi import FastAPI
+
 import routers
+from db.client import db
 
 
 @asynccontextmanager

@@ -1,10 +1,11 @@
-from .unidimensional import UnidimensionalModel
-from adaptivetesting.models import TestItem, ItemPool
-from adaptivetesting.math.estimators import BayesModal, NormalPrior
+from typing import Any
+
+from adaptivetesting.math.estimators import BayesModal
 from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, TestItem
 from adaptivetesting.services import IEstimator, ItemSelectionStrategy
-from typing import Type, Any
-import math
+
+from .unidimensional import UnidimensionalModel
 
 
 class MultidimensionalModel:
@@ -29,7 +30,7 @@ class MultidimensionalModel:
         mastery_threshold: float,
         item_pool: ItemPool,
         initial_theta: float = 0.0,
-        ability_estimator: Type[IEstimator] = BayesModal,
+        ability_estimator: type[IEstimator] = BayesModal,
         estimator_args: dict[str, Any] | None = None,
         item_selector: ItemSelectionStrategy = maximum_information_criterion,
         item_selector_args: dict[str, Any] | None = None,
@@ -39,7 +40,8 @@ class MultidimensionalModel:
 
         Arguments:
             skill (str): The skill/concept this model is tracking.
-            mastery_threshold (float): The value theta should reach to stop asking questions from this skill/concept.
+            mastery_threshold (float):
+                The value theta should reach to stop asking questions from this skill/concept.
             item_pool (ItemPool): All unanswered TestItem objects relating to this skill/concept.
             initial_theta (float): The initial ability value estimate, defaults to 0.0
             ability_estimator (Type[IEstimator]):
@@ -47,7 +49,8 @@ class MultidimensionalModel:
             estimator_args (dict[str, Any] | None):
                 Arguments to provide to the estimator class, defaults to None
             item_selector (ItemSelectionStrategy):
-                The selection strategy class used to select the next item, defaults to maximum_information_criterion
+                The selection strategy class used to select the next item, defaults to
+                maximum_information_criterion
             item_selector_args (dict[str, Any] | None):
                 Arguments to provide to the item selector class, defaults to None
         """
@@ -88,17 +91,19 @@ class MultidimensionalModel:
 
     def get_next_item(self) -> TestItem:
         """
-        Returns the TestItem object associated with the next question that should be asked to the student.
+        Returns the TestItem object associated with the next question that should be asked
+        to the student.
 
         Currently chooses a question from the model with the lowest current estimated theta value.
         NOTE: in the testing phase, perhaps try out different question picking strategies.
 
         Return:
-            TestItem: The next question that should be asked in the adaptive test, or None if no TestItems are left.
+            TestItem: The next question that should be asked in the adaptive test,
+            or None if no TestItems are left.
         """
         sorted_models = sorted(self.models.items(), key=lambda kv: kv[1].get_theta())
 
-        for skill, model in sorted_models:
+        for _, model in sorted_models:
             if not model.questions_left:
                 continue
             if model.mastery_reached:

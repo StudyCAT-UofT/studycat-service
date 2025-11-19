@@ -1,9 +1,10 @@
+from typing import Any
+
 from adaptivetesting.implementations import TestAssembler
-from adaptivetesting.models import TestItem, ItemPool, ItemSelectionException
 from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, ItemSelectionException, TestItem
 from adaptivetesting.services import IEstimator, ItemSelectionStrategy
-from typing import Type, Any
 
 
 class UnidimensionalModel:
@@ -11,12 +12,15 @@ class UnidimensionalModel:
     Wrapper around TestAssembler for a single unidimensional IRT skill.
     Lets you customize ability estimator and item selection strategy.
 
-    Attributes: 
-        questions_left (bool): 
-            Whether or not this model should continue asking questions. If the ItemPool is empty, False
-        mastery_reached (bool): True if the theta value has surpassed the required mastery threshold. 
-        mastery_threshold (float): The value theta should reach to stop asking questions from this skill/concept. 
-        skill (str): The skill/concept this model is tracking 
+    Attributes:
+        questions_left (bool):
+            Whether or not this model should continue asking questions.
+            If the ItemPool is empty, False
+        mastery_reached (bool):
+            True if the theta value has surpassed the required mastery threshold.
+        mastery_threshold (float):
+            The value theta should reach to stop asking questions from this skill/concept.
+        skill (str): The skill/concept this model is tracking
         adaptive_test (TestAssembler): A 3PL IRT model.
     """
 
@@ -29,26 +33,28 @@ class UnidimensionalModel:
         mastery_threshold: float,
         item_pool: ItemPool,
         initial_theta: float = 0.0,
-        ability_estimator: Type[IEstimator] = BayesModal,
+        ability_estimator: type[IEstimator] = BayesModal,
         estimator_args: dict[str, Any] | None = None,
         item_selector: ItemSelectionStrategy = maximum_information_criterion,
         item_selector_args: dict[str, Any] | None = None,
         debug: bool = False
     ):
         """
-        Creates a UnidimensionalModel object. 
+        Creates a UnidimensionalModel object.
 
-        Arguments: 
+        Arguments:
             skill (str): The skill/concept this model is tracking.
-            mastery_threshold (float): The value theta should reach to stop asking questions from this skill/concept. 
+            mastery_threshold (float):
+                The value theta should reach to stop asking questions from this skill/concept.
             item_pool (ItemPool): All unanswered TestItem objects relating to this skill/concept.
             initial_theta (float): The initial ability value estimate, defaults to 0.0
-            ability_estimator (Type[IEstimator]): 
+            ability_estimator (Type[IEstimator]):
                 The estimator class used to estimate theta, defaults to BayesModel
-            estimator_args (dict[str, Any] | None): 
+            estimator_args (dict[str, Any] | None):
                 Arguments to provide to the estimator class, defaults to None
-            item_selector (ItemSelectionStrategy): 
-                The selection strategy class used to select the next item, defaults to maximum_information_criterion
+            item_selector (ItemSelectionStrategy):
+                The selection strategy class used to select the next item, defaults to
+                maximum_information_criterion
             item_selector_args (dict[str, Any] | None):
                 Arguments to provide to the item selector class, defaults to None
             debug (bool):
@@ -100,7 +106,7 @@ class UnidimensionalModel:
         """
         Ask the underlying TestAssembler to select the next best item.
         """
-        try: 
+        try:
             return self.adaptive_test.get_next_item()
         except ItemSelectionException:
             # no items left in the item pool

@@ -7,16 +7,16 @@ Build item pools per concept, initialize the models, apply the last
 response (if provided), and ask the model for the next item.
 """
 from __future__ import annotations
-from typing import Dict, List, Optional, Tuple
+
 import uuid
 
-from adaptivetesting.models import TestItem, ItemPool
 from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
+from adaptivetesting.models import ItemPool, TestItem
+
+from models.multidimensional import MultidimensionalModel
 
 # Import your wrappers
-from models.unidimensional import UnidimensionalModel
-from models.multidimensional import MultidimensionalModel
 
 
 def _make_test_item(a: float, b: float, c: float) -> TestItem:
@@ -30,11 +30,11 @@ def _make_test_item(a: float, b: float, c: float) -> TestItem:
 
 
 def build_multidim_model(
-    concepts: List[str],
-    pools_by_concept: Dict[str, ItemPool],
+    concepts: list[str],
+    pools_by_concept: dict[str, ItemPool],
     prior_mu: float,
     prior_sigma2: float,
-    mastery_thresholds: Dict[str, float],
+    mastery_thresholds: dict[str, float],
 ) -> MultidimensionalModel:
     """
     Build a MultidimensionalModel with one UnidimensionalModel per concept.
@@ -54,7 +54,10 @@ def build_multidim_model(
             item_pool=pool,
             initial_theta=prior_mu,
             ability_estimator=BayesModal,
-            estimator_args={"prior": NormalPrior(prior_mu, prior_sigma2), "optimization_interval": (-4, 4)},
+            estimator_args={
+                "prior": NormalPrior(prior_mu, prior_sigma2),
+                "optimization_interval": (-4, 4),
+            },
             item_selector=maximum_information_criterion,
             item_selector_args={}
         )

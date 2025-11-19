@@ -5,13 +5,15 @@ from openpyxl import load_workbook
 def excel_to_df(file_path: str) -> pd.DataFrame:
     """
     Converts an excel file in the exact format provided by Prof. De Melo to a pandas dataframe.
-    Adds an additional column 'Correct_Answer', specifying which response column has the correct answer.
+    Adds an additional column 'Correct_Answer', specifying which response column has the
+    correct answer.
 
     Arguments:
         - file_path(str): The file path to the excel file that will be loaded.
 
     Returns:
-        - A pandas DataFrame containing all questions and information, with an additional 'Correct_Answer' column.
+        - A pandas DataFrame containing all questions and information, with an additional
+        'Correct_Answer' column.
     """
     wb = load_workbook(file_path)
     ws = wb.active
@@ -26,7 +28,7 @@ def excel_to_df(file_path: str) -> pd.DataFrame:
     correct_answers = []
 
     # Iterate over rows in the worksheet (skipping header)
-    for i, row in enumerate(ws.iter_rows(min_row=2), start=0):
+    for row in ws.iter_rows(min_row=2):
         correct = None
         for col in response_cols:
             # Find corresponding Excel column index
