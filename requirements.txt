@@ -5,3 +5,8 @@ prisma
 python-dotenv
 adaptivetesting
 ruff
+pytest
+pytest-asyncio
+pytest-mock
+pytest-cov
+pytest-watch
