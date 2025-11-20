@@ -296,18 +296,20 @@ async def step_attempt(
     for module_id, theta_value in theta.items():
         await repo.upsert_theta(attempt.enrollmentId, module_id, theta_value)
 
-    # Pick next item
-    next_item, chosen_skill = choose_next_item(model)
-
-    # FINISH if no next item
-    is_finished = next_item is None
-
     # Persist snapshot onto the *latest* response if we found one
     if used_response_id:
         await repo.attach_engine_snapshot_to_response(
-            used_response_id,
-            snapshot=_snapshot_payload(theta=theta, mastery=mastery)
+            used_response_id, snapshot=_snapshot_payload(theta=theta, mastery=mastery)
         )
+
+    next_item = None
+
+    if (len(all_responses) < attempt.fixedLengthN):
+        # Pick next item
+        next_item, chosen_skill = choose_next_item(model)
+
+    # FINISH if no next item
+    is_finished = next_item is None
 
     # Build public payload
     next_public: PublicItem | None = None
