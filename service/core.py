@@ -6,7 +6,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from adaptivetesting.models import ItemPool, TestItem
-from prisma.enums import OptionLabel
 
 from config import settings
 from db import repo
@@ -24,13 +23,13 @@ class PublicItem:
     reference: str | None = None
 
 
-def _label_from_index(idx: int) -> OptionLabel:
+def _label_from_index(idx: int) -> str:
     # TODO: Don't restrict to A..D.
-    mapping = [OptionLabel.A, OptionLabel.B, OptionLabel.C, OptionLabel.D]
+    mapping = ["A", "B", "C", "D"]
     return mapping[idx]
 
 
-def _index_from_label(label: OptionLabel) -> int:
+def _index_from_label(label: str) -> int:
     # TODO: Don't restrict to A..D.
     return {"A": 0, "B": 1, "C": 2, "D": 3}[label.name]
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from prisma.enums import OptionLabel
 
 from service.core import _index_from_label, _label_from_index, init_attempt
 
@@ -17,10 +16,10 @@ from service.core import _index_from_label, _label_from_index, init_attempt
 
 def test_label_from_index_valid():
     """Test valid index to label conversions."""
-    assert _label_from_index(0) == OptionLabel.A
-    assert _label_from_index(1) == OptionLabel.B
-    assert _label_from_index(2) == OptionLabel.C
-    assert _label_from_index(3) == OptionLabel.D
+    assert _label_from_index(0) == "A"
+    assert _label_from_index(1) == "B"
+    assert _label_from_index(2) == "C"
+    assert _label_from_index(3) == "D"
 
 
 def test_label_from_index_out_of_range():
@@ -31,10 +30,10 @@ def test_label_from_index_out_of_range():
 
 def test_index_from_label_valid():
     """Test valid label to index conversions."""
-    assert _index_from_label(OptionLabel.A) == 0
-    assert _index_from_label(OptionLabel.B) == 1
-    assert _index_from_label(OptionLabel.C) == 2
-    assert _index_from_label(OptionLabel.D) == 3
+    assert _index_from_label("A") == 0
+    assert _index_from_label("B") == 1
+    assert _index_from_label("C") == 2
+    assert _index_from_label("D") == 3
 
 
 # ============================================================================

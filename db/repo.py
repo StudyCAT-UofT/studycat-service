@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from prisma.enums import AttemptStatus
 from prisma.models import Attempt, Item, Quiz, Response, Theta
 
 from db.client import db
@@ -35,7 +34,7 @@ async def mark_attempt_finished(
     await db.attempt.update(
         where={"id": attempt_id},
         data={
-            "status": AttemptStatus.COMPLETED,
+            "status": "COMPLETED",
             "engineMasteryAtFinish": engine_mastery_at_finish
         }
     )
@@ -90,19 +89,26 @@ async def list_eligible_items_for_quiz(quiz_id: str) -> list[Item]:
     """
     quiz = await db.quiz.find_unique(
         where={"id": quiz_id},
-        include={"quizItems": True}
+        include={
+            "quizItems": True,
+            "quizModules": {"include": {"module": True}},
+            }
     )
     if not quiz:
         return []
 
     explicit_ids = [qi.itemId for qi in quiz.quizItems]
 
+    included_module_ids = [qm.module.id for qm in quiz.quizModules]
+
     # Filter-based scope
     where_clause: dict[str, Any] = {"active": True}
-    if quiz.includedModuleIds:
-        where_clause["moduleId"] = {"in": quiz.includedModuleIds}
+    if included_module_ids:
+        where_clause["moduleId"] = {"in": included_module_ids}
+
     if quiz.includedBlooms:
-        where_clause["bloom"] = {"in": quiz.includedBlooms}
+        bloom_list = [b.strip() for b in quiz.includedBlooms.split(",")]
+        where_clause["bloom"] = {"in": bloom_list}
 
     # If explicit list exists, union of both (explicit always included)
     filter_items = await db.item.find_many(
