@@ -31,7 +31,7 @@ def _label_from_index(idx: int) -> str:
 
 def _index_from_label(label: str) -> int:
     # TODO: Don't restrict to A..D.
-    return {"A": 0, "B": 1, "C": 2, "D": 3}[label.name]
+    return {"A": 0, "B": 1, "C": 2, "D": 3}[label]
 
 
 def _build_item_pools(
