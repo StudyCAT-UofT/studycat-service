@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from prisma.models import Attempt, Item, Quiz, Response, Theta
+from prisma.models import Attempt, Item, Quiz, Response, Theta, QuizModule
 
 from db.client import db
 
@@ -25,6 +25,13 @@ async def get_quiz(quiz_id: str) -> Quiz | None:
         where={"id": quiz_id},
         include=False
     )
+
+async def get_quiz_modules(quiz_id: str) -> list[QuizModule] | None:
+    quiz_modules = await db.quizmodule.find_many(
+        where={"quizId": quiz_id}
+    )
+    
+    return quiz_modules
 
 
 async def mark_attempt_finished(
