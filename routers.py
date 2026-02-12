@@ -64,7 +64,7 @@ async def attempt_init(attempt_id: str, payload: AttemptInitRequest) -> AttemptI
 @router.post("/attempts/{attempt_id}/step", response_model=AttemptStepResponse)
 async def attempt_step(attempt_id: str, payload: AttemptStepRequest) -> AttemptStepResponse:
     try:
-        theta, mastery, next_item, is_finished = await step_attempt(
+        theta, mastery, next_item, is_finished, all_mastered = await step_attempt(
             attempt_id=attempt_id,
             response_id=payload.response_id,
             item_id=payload.item_id,
@@ -73,9 +73,15 @@ async def attempt_step(attempt_id: str, payload: AttemptStepRequest) -> AttemptS
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    next_action = "CONTINUE"
+    if all_mastered:
+        next_action = "MASTERED"
+    elif is_finished:
+        next_action = "FINISH"
+
     return AttemptStepResponse(
         theta=theta,
         mastery=mastery,
-        next_action="FINISH" if is_finished else "CONTINUE",
+        next_action=next_action,
         next_item=_map_public_item(next_item)
     )
