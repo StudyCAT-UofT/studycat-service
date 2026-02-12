@@ -82,3 +82,12 @@ def choose_next_item(model: MultidimensionalModel):
             chosen_skill = skill
             break
     return next_item, chosen_skill
+
+def determine_all_mastered(model: MultidimensionalModel):
+    """
+    Determines if the user has mastered all the modules included in this model.
+
+    Returns:
+        True if all modules have been mastered, False otherwise
+    """
+    return model.determine_model_mastered()
