@@ -9,7 +9,12 @@ from adaptivetesting.models import ItemPool, TestItem
 
 from config import settings
 from db import repo
-from engine.adapter import _make_test_item, build_multidim_model, choose_next_item
+from engine.adapter import (
+    _make_test_item,
+    build_multidim_model,
+    choose_next_item,
+    determine_all_mastered,
+)
 from models.multidimensional import MultidimensionalModel
 
 
@@ -309,6 +314,8 @@ async def step_attempt(
     # FINISH if no next item
     is_finished = next_item is None
 
+    all_mastered = determine_all_mastered(model)
+
     # Build public payload
     next_public: PublicItem | None = None
     if next_item:
@@ -321,4 +328,4 @@ async def step_attempt(
                 next_public = _public_item_payload(item)
                 break
 
-    return theta, mastery, next_public, is_finished
+    return theta, mastery, next_public, is_finished, all_mastered
