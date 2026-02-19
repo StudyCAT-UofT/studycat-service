@@ -24,7 +24,6 @@ class Settings(BaseModel):
 
     # Simple mastery thresholds by concept (uniform default). Later: load per course.
     mastery_thresholds: dict[str, float] = Field(default_factory=dict)
-    default_mastery_threshold: float = 1.0
 
     # Whether to return FINISH instead of 404 when pool exhausted (per your requirement)
     return_finish_flag: bool = True
