@@ -138,11 +138,11 @@ async def init_attempt(
         effective_concepts,
     )
 
-    # Mastery thresholds (uniform default unless provided)
-    thr = {
-        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
-        for c in effective_concepts
-    }
+    # Mastery thresholds
+    quiz_modules = await repo.get_quiz_modules(attempt.quizId)
+    module_thresholds = {qm.moduleId: qm.masteryThreshold for qm in quiz_modules}
+
+    thr = {c: module_thresholds[c] for c in effective_concepts}
 
     model = build_multidim_model(
         concepts=effective_concepts,
@@ -212,10 +212,9 @@ async def step_attempt(
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
-    thr = {
-        c: settings.mastery_thresholds.get(c, settings.default_mastery_threshold)
-        for c in concepts
-    }
+    quiz_modules = await repo.get_quiz_modules(attempt.quizId)
+    module_thresholds = {qm.moduleId: qm.masteryThreshold for qm in quiz_modules}
+    thr = {c: module_thresholds[c] for c in concepts}
     model = build_multidim_model(
         concepts=concepts,
         pools_by_concept=pools,
