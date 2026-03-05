@@ -73,11 +73,12 @@ async def attempt_step(attempt_id: str, payload: AttemptStepRequest) -> AttemptS
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    next_action = "CONTINUE"
     if all_mastered:
         next_action = "MASTERED"
     elif is_finished:
         next_action = "FINISH"
+    else:
+        next_action = "CONTINUE"
 
     return AttemptStepResponse(
         theta=theta,
