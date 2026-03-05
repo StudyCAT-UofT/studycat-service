@@ -123,4 +123,4 @@ class MultidimensionalModel:
         Return:
             True, if all modules in this model have been mastered, False otherwise
         """
-        return all([model.mastery_reached for model in self.models.values()])
+        return all(model.mastery_reached for model in self.models.values())
