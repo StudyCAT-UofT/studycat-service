@@ -115,3 +115,12 @@ class MultidimensionalModel:
 
         # if all are exhausted or mastered
         return None
+
+    def determine_model_mastered(self) -> bool:
+        """
+        Determines if all modules have been mastered in this model.
+
+        Return:
+            True, if all modules in this model have been mastered, False otherwise
+        """
+        return all(model.mastery_reached for model in self.models.values())

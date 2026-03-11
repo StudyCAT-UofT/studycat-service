@@ -41,5 +41,5 @@ class AttemptInitResponse(BaseModel):
 class AttemptStepResponse(BaseModel):
     theta: dict[str, float]
     mastery: dict[str, bool]
-    next_action: str                             # CONTINUE | FINISH
+    next_action: str                             # CONTINUE | FINISH | MASTERED
     next_item: ItemPayload | None = None
