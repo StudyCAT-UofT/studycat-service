@@ -114,6 +114,35 @@ def _find_test_item_by_irt_params(
     return None
 
 
+async def _filter_repeat_correct_items(attempt, items):
+    """
+    If quiz does NOT allow repeats, remove items that this student
+    has previously answered correctly on this quiz.
+    """
+    quiz = await repo.get_quiz(attempt.quizId)
+
+    # If repeats allowed, no filtering
+    if not quiz or getattr(quiz, "repeatCorrectQuestions", True):
+        return items
+
+    # Get all previously correct item IDs for this student + quiz
+    correct_item_ids = await repo.get_correct_item_ids_for_enrollment_and_quiz(
+        enrollment_id=attempt.enrollmentId,
+        quiz_id=attempt.quizId,
+    )
+
+    if not correct_item_ids:
+        return items
+
+    filtered = [it for it in items if it.id not in correct_item_ids]
+
+    # if no unanswered items remain, items will repeat again
+    if not filtered:
+        return items
+
+    return filtered
+
+
 # ---- Orchestration -----------------------------------------------------------
 
 async def init_attempt(
@@ -127,6 +156,7 @@ async def init_attempt(
         raise ValueError("Unknown attempt_id")
 
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
+    items = await _filter_repeat_correct_items(attempt, items)
     if not items:
         # Nothing to ask
         return {}, None
@@ -211,9 +241,10 @@ async def step_attempt(
 
     # Pull scope items
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
+    items = await _filter_repeat_correct_items(attempt, items)
     if not items:
         # No items left in scope
-        return {}, {}, None, True
+        return {}, {}, None, True, False
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
