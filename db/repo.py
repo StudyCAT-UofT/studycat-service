@@ -143,7 +143,10 @@ async def get_item_by_id(item_id: str) -> Item | None:
     )
 
 
-async def get_correct_item_ids_for_enrollment_and_quiz(enrollment_id: str, quiz_id: str) -> set[str]:
+async def get_correct_item_ids_for_enrollment_and_quiz(
+    enrollment_id: str,
+    quiz_id: str
+) -> set[str]:
     """
     Returns item IDs that this student has EVER answered correctly
     for this quiz (across all attempts).
