@@ -136,9 +136,9 @@ async def _filter_repeat_correct_items(attempt, items):
 
     filtered = [it for it in items if it.id not in correct_item_ids]
 
-    # if no unanswered items remain, items will repeat again
+    # if no unanswered items remain, no items will be returned 
     if not filtered:
-        return items
+        return None
 
     return filtered
 
@@ -222,7 +222,7 @@ async def step_attempt(
     response_id: str,
     item_id: str | None = None,
     answer_index: int | None = None
-) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool]:
+) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool, bool]:
     """
     Process a response and return the next item.
 
@@ -233,7 +233,7 @@ async def step_attempt(
         answer_index: Fallback answer index if Response lookup fails
 
     Returns:
-        Tuple of (theta values, mastery values, next item, is_finished)
+        Tuple of (theta values, mastery values, next item, is_finished, all_mastered)
     """
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
