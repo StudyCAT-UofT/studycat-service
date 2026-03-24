@@ -136,7 +136,7 @@ async def _filter_repeat_correct_items(attempt, items):
 
     filtered = [it for it in items if it.id not in correct_item_ids]
 
-    # if no unanswered items remain, no items will be returned 
+    # if no unanswered items remain, no items will be returned
     if not filtered:
         return None
 

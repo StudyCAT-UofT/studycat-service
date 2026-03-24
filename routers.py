@@ -53,14 +53,14 @@ async def attempt_init(attempt_id: str, payload: AttemptInitRequest) -> AttemptI
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    
+
     response = AttemptInitResponse(
         theta=theta,
         next_item=_map_public_item(next_item),
         next_action="CONTINUE"
     )
 
-    if next_item == None:
+    if next_item is None:
         response.next_action = "FINISH"
 
     return response
