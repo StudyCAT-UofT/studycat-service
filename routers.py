@@ -69,7 +69,7 @@ async def attempt_init(attempt_id: str, payload: AttemptInitRequest) -> AttemptI
 
     Builds the IRT model for the attempt, seeds theta from any prior history
     stored against the enrollment, and selects the first item using the
-    maximum information criterion. 
+    maximum information criterion.
 
     Args:
         attempt_id: The primary key of the Attempt record, taken from the URL path.
