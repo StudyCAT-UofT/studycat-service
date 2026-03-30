@@ -1,6 +1,6 @@
 # StudyCAT Quiz Engine Service
 
-A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a PostgreSQL database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
+A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a SQL Server database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
 
 ## API Endpoints
 
@@ -18,17 +18,16 @@ A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) mo
 ### Prerequisites
 
 1. **Python 3.13+**
-2. **PostgreSQL database** (see Database Setup below)
+2. **SQL Server database** (see Database Setup below)
 3. **Environment variables** (see Configuration below)
 
 ### Details
 
-The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in
-the .env file in the root directory.
+The StudyCAT quiz engine uses a SQL Server database running in a Docker container. The connection details are stored in the .env file in the root directory.
 
 For local development, duplicate the .env.example file in the root directory and name it .env
 
-For local development, start Docker container with the local database server in the studycat repository by following the instructions in the README.md in the studycat repository.
+For local development, start the Docker container with the local database server in the studycat repository by following the instructions in the README.md in the studycat repository.
 
 Both the StudyCAT quiz engine (`studycat-service`) and the StudyCAT web application (`studycat`) use the same database. To ensure alignment between the two repositories, we are using Prisma to define the database schema and handle the database migrations. The `studycat-schema` repository contains the Prisma schema and migrations for the database.
 
@@ -72,12 +71,6 @@ This repository installs the `studycat-schema` repository as a submodule.
    ```bash
    make run
    ```
-
-### Test Database Connection
-
-```bash
-python db/test_db.py
-```
 
 ## API Usage Examples
 
@@ -134,6 +127,16 @@ curl -X POST "http://localhost:8000/v1/attempts/{attempt_id}/step" \
 }
 ```
 
+### `next_action` Values
+
+The `next_action` field in step responses drives client-side navigation:
+
+| Value | Meaning |
+|-------|---------|
+| `CONTINUE` | Another item is available; display `next_item`. |
+| `FINISH` | The fixed question limit has been reached; show results. |
+| `MASTERED` | Every skill has crossed its mastery threshold; show the mastery screen. Takes precedence over `FINISH` if both conditions are met. |
+
 ## Architecture
 
 ### Core Components
@@ -163,6 +166,18 @@ The service implements:
 - **Bayesian Estimation**: Uses BayesModal with NormalPrior
 - **Item Selection**: Maximum Information Criterion for optimal selection
 
+### Mastery System
+
+Each quiz has per-module mastery thresholds stored in `QuizModule.masteryThreshold`. After every response, the engine compares each skill's theta estimate against its threshold. When theta exceeds the threshold the skill is marked mastered (`mastery: { "SkillName": true }`). Once all skills in the attempt are mastered the step response returns `next_action: "MASTERED"`.
+
+### Theta Persistence
+
+Theta values (ability estimates) are persisted per enrollment and module in the `Theta` table. On `init`, the engine loads any previously stored thetas for the enrollment and seeds the IRT model with them, so ability estimates carry over across attempts for the same student and quiz.
+
+### Repeat-Correct-Question Filtering
+
+If a quiz has `repeatCorrectQuestions` set to `false`, the engine automatically removes any items the student has previously answered correctly (across all past attempts for that quiz and enrollment) before building the item pool. If no unanswered items remain after filtering, the attempt ends immediately.
+
 ## Development
 
 ### Project Structure
@@ -172,39 +187,36 @@ studycat-service/
 ├── main.py                 # FastAPI application
 ├── routers.py              # API routes
 ├── schemas.py              # Pydantic models
+├── config.py               # Settings
 ├── requirements.txt        # Python dependencies
+├── Makefile                # Dev task runner
+├── pyproject.toml          # Linting/tool config
 ├── service/
-│   ├── core.py            # Main business logic
+│   └── core.py             # Main business logic
 ├── db/
-│   ├── client.py          # Prisma client
-│   ├── repo.py            # Database queries
-│   └── test_db.py         # Database testing
+│   ├── client.py           # Prisma client singleton
+│   └── repo.py             # Database queries
 ├── engine/
-│   └── adapter.py         # IRT model adapter
+│   └── adapter.py          # IRT model adapter
 ├── models/
-│   ├── unidimensional.py  # Unidimensional IRT model
-│   └── multidimensional.py # Multidimensional IRT model
+│   ├── unidimensional.py   # Unidimensional IRT model
+│   ├── multidimensional.py # Multidimensional IRT model
+│   └── README.md           # Models documentation
+├── tests/
+│   └── test_core.py        # Unit tests
 └── external/
-    └── studycat-schema/   # Database schema (submodule)
+    └── studycat-schema/    # Database schema (submodule)
 ```
 
 ### Testing
 
-1. **Database Connection Test:**
+```bash
+# Run unit tests
+make test
 
-   ```bash
-   python db/test_db.py
-   ```
+# Run with coverage report
+make test-coverage
 
-2. **API Testing:**
-
-   ```bash
-   # Start service
-   uvicorn main:app --reload
-
-   # Test health endpoint
-   curl -X GET "http://localhost:8000/v1/health"
-
-   # Test with real database data
-   # (Use existing attempt IDs from your database)
-   ```
+# Test health endpoint manually
+curl -X GET "http://localhost:8000/v1/health"
+```
