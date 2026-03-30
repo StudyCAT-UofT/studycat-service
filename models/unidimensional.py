@@ -49,7 +49,7 @@ class UnidimensionalModel:
             item_pool (ItemPool): All unanswered TestItem objects relating to this skill/concept.
             initial_theta (float): The initial ability value estimate, defaults to 0.0
             ability_estimator (Type[IEstimator]):
-                The estimator class used to estimate theta, defaults to BayesModel
+                The estimator class used to estimate theta, defaults to BayesModal
             estimator_args (dict[str, Any] | None):
                 Arguments to provide to the estimator class, defaults to None
             item_selector (ItemSelectionStrategy):
@@ -94,15 +94,7 @@ class UnidimensionalModel:
         """Set the current ability estimate (theta)."""
         self.adaptive_test.ability_level = theta
 
-    def get_skill(self) -> str:
-        """Return the skill this model is tracking."""
-        return self.skill
-
-    def get_responses(self) -> list[int]:
-        """Return the response pattern so far (0 = incorrect, 1 = correct)."""
-        return self.adaptive_test.response_pattern
-
-    def get_next_item(self) -> TestItem:
+    def get_next_item(self) -> TestItem | None:
         """
         Ask the underlying TestAssembler to select the next best item.
         """

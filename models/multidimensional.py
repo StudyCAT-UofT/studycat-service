@@ -45,7 +45,7 @@ class MultidimensionalModel:
             item_pool (ItemPool): All unanswered TestItem objects relating to this skill/concept.
             initial_theta (float): The initial ability value estimate, defaults to 0.0
             ability_estimator (Type[IEstimator]):
-                The estimator class used to estimate theta, defaults to BayesModel
+                The estimator class used to estimate theta, defaults to BayesModal
             estimator_args (dict[str, Any] | None):
                 Arguments to provide to the estimator class, defaults to None
             item_selector (ItemSelectionStrategy):
@@ -68,7 +68,7 @@ class MultidimensionalModel:
 
         self.models[skill] = model
 
-    def get_theta(self, skill: str) -> None:
+    def get_theta(self, skill: str) -> float:
         """
         Returns the theta value of the given skill.
 
@@ -89,7 +89,7 @@ class MultidimensionalModel:
         """
         self.models[skill].record_response(response, item)
 
-    def get_next_item(self) -> TestItem:
+    def get_next_item(self) -> TestItem | None:
         """
         Returns the TestItem object associated with the next question that should be asked
         to the student.

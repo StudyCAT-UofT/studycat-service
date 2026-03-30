@@ -18,7 +18,6 @@ class AttemptStepRequest(BaseModel):
     # Fallback fields if Response lookup fails
     item_id: str | None = None
     answer_index: int | None = None
-    response_time_ms: int | None = None
 
 
 # ---- Responses ----

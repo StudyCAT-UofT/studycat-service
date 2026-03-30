@@ -1,7 +1,5 @@
 """
 Thin repository wrapper to isolate Prisma queries from the engine logic.
-
-NOTE: Placeholder -- to be checked and implemented.
 """
 from __future__ import annotations
 
@@ -43,7 +41,7 @@ async def get_quiz(quiz_id: str) -> Quiz | None:
         where={"id": quiz_id}
     )
 
-async def get_quiz_modules(quiz_id: str) -> list[QuizModule] | None:
+async def get_quiz_modules(quiz_id: str) -> list[QuizModule]:
     """
     Fetch all QuizModule records associated with a given quiz.
 
@@ -54,35 +52,12 @@ async def get_quiz_modules(quiz_id: str) -> list[QuizModule] | None:
         quiz_id: Primary key of the Quiz whose modules to retrieve.
 
     Returns:
-        A list of QuizModule records (may be empty if none are configured).
+        A list of QuizModule records, or an empty list if none are configured.
     """
     quiz_modules = await db.quizmodule.find_many(
         where={"quizId": quiz_id}
     )
     return quiz_modules
-
-async def mark_attempt_finished(
-        attempt_id: str,
-        engine_mastery_at_finish: dict[str, Any] | None = None,
-    ) -> None:
-    """
-    Mark an attempt as COMPLETED and optionally store the final mastery snapshot.
-
-    Args:
-        attempt_id:                Primary key of the Attempt to update.
-        engine_mastery_at_finish:  Optional dict of skill → theta values
-                                   representing the student's ability estimates
-                                   at the point of completion. Pass None to
-                                   leave the field unset.
-    """
-    await db.attempt.update(
-        where={"id": attempt_id},
-        data={
-            "status": "COMPLETED",
-            "engineMasteryAtFinish": engine_mastery_at_finish
-        }
-    )
-
 
 # -------- Responses --------
 
@@ -109,32 +84,6 @@ async def list_responses(attempt_id: str) -> list[Response]:
     )
 
 
-async def get_latest_response_without_snapshot(attempt_id: str) -> Response | None:
-    """
-    Fetch the most recent Response for an attempt that has not yet had an
-    engine mastery snapshot attached.
-
-    Used to identify which response needs to be updated after a theta
-    estimation step. A response is considered snapshotless when its
-    engineMasterySnapshot field is None.
-
-    Args:
-        attempt_id: Primary key of the Attempt to query.
-
-    Returns:
-        The most recently answered Response without a snapshot, or None if
-        all responses already have snapshots or no responses exist.
-    """
-    # ASSUMPTION: We consider "without snapshot" as engineMasterySnapshot == None.
-    rows = await db.response.find_many(
-        where={"attemptId": attempt_id, "engineMasterySnapshot": None},
-        order={"answeredAt": "desc"},
-        take=1,
-        include={"item": {"include": {"options": True}}}
-    )
-    return rows[0] if rows else None
-
-
 async def get_response_by_id(response_id: str) -> Response | None:
     """Fetch a specific Response by ID with item and options included."""
     return await db.response.find_unique(
@@ -143,7 +92,7 @@ async def get_response_by_id(response_id: str) -> Response | None:
     )
 
 
-async def attach_engine_snapshot_to_response(response_id: str, snapshot: dict[str, Any]) -> None:
+async def attach_engine_snapshot_to_response(response_id: str, snapshot: str) -> None:
     """
     Persist a mastery snapshot onto a Response record.
 
@@ -153,7 +102,7 @@ async def attach_engine_snapshot_to_response(response_id: str, snapshot: dict[st
 
     Args:
         response_id: Primary key of the Response to update.
-        snapshot:    Dict of skill → float theta values to store. Should be
+        snapshot:    JSON string of skill → float theta values to store. Should be
                      produced by _snapshot_payload in service/core.py to
                      ensure format consistency.
     """
@@ -272,74 +221,7 @@ async def get_correct_item_ids_for_enrollment_and_quiz(
     # Collect unique item IDs
     return {r.itemId for r in responses}
 
-# -------- Additional Helper Functions --------
-
-async def get_quiz_by_id(quiz_id: str) -> Quiz | None:
-    """
-    Fetch a Quiz by its primary key with quizItems included.
-
-    This is a more complete alternative to get_quiz — use this when you need
-    access to the explicitly assigned item list alongside the quiz record.
-
-    Args:
-        quiz_id: Primary key of the Quiz to fetch.
-
-    Returns:
-        The Quiz with quizItems included, or None if not found.
-    """
-    return await db.quiz.find_unique(
-        where={"id": quiz_id},
-        include={"quizItems": True}
-    )
-
-
-async def get_attempt_by_id(attempt_id: str) -> Attempt | None:
-    """
-    Fetch an Attempt by its primary key with both quiz and responses included.
-
-    This is a more complete alternative to get_attempt — use this when you
-    need the full response history alongside the attempt and quiz records,
-    for example when rendering a results summary.
-
-    Args:
-        attempt_id: Primary key of the Attempt to fetch.
-
-    Returns:
-        The Attempt with quiz and responses included, or None if not found.
-    """
-    return await db.attempt.find_unique(
-        where={"id": attempt_id},
-        include={"quiz": True, "responses": True}
-    )
-
-
 # -------- Theta Management --------
-
-async def get_theta(enrollment_id: str, module_id: str) -> Theta | None:
-    """
-    Fetch the current theta record for a specific enrollment and module.
-
-    Looks up by the composite unique key (enrollmentId, moduleId). Returns
-    the full Theta record rather than just the value so callers have access
-    to metadata such as updatedAt if needed.
-
-    Args:
-        enrollment_id: Primary key of the Enrollment.
-        module_id:     Primary key of the Module (concept) to look up.
-
-    Returns:
-        The Theta record if one exists, or None if the student has no stored
-        ability estimate for this module yet.
-    """
-    return await db.theta.find_unique(
-        where={
-            "enrollmentId_moduleId": {
-                "enrollmentId": enrollment_id,
-                "moduleId": module_id
-            }
-        }
-    )
-
 
 async def upsert_theta(enrollment_id: str, module_id: str, value: float) -> Theta:
     """
