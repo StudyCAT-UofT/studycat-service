@@ -65,7 +65,10 @@ async def test_init_attempt_no_items():
             "service.core.repo.list_eligible_items_for_quiz", new_callable=AsyncMock
         ) as mock_items:
             mock_items.return_value = []
+            with patch("service.core.repo.get_quiz", new_callable=AsyncMock) as mock_quiz:
+                mock_quiz.return_value = MagicMock(repeatCorrectQuestions=True)
 
-            theta, public = await init_attempt("attempt1", None, None, None)
-            assert theta == {}
-            assert public is None
+                theta, public = await init_attempt("attempt1", None, None, None)
+
+                assert theta == {}
+                assert public is None

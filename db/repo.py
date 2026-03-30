@@ -22,8 +22,7 @@ async def get_attempt(attempt_id: str) -> Attempt | None:
 
 async def get_quiz(quiz_id: str) -> Quiz | None:
     return await db.quiz.find_unique(
-        where={"id": quiz_id},
-        include=False
+        where={"id": quiz_id}
     )
 
 async def get_quiz_modules(quiz_id: str) -> list[QuizModule] | None:
@@ -143,6 +142,28 @@ async def get_item_by_id(item_id: str) -> Item | None:
         include={"options": True}
     )
 
+
+async def get_correct_item_ids_for_enrollment_and_quiz(
+    enrollment_id: str,
+    quiz_id: str
+) -> set[str]:
+    """
+    Returns item IDs that this student has EVER answered correctly
+    for this quiz (across all attempts).
+    """
+    responses = await db.response.find_many(
+        where={
+            "isCorrect": True,
+            "attempt": {
+                "quizId": quiz_id,
+                "enrollmentId": enrollment_id,
+            },
+        },
+        include={"item": False},  # optional, just get response fields
+    )
+
+    # Collect unique item IDs
+    return {r.itemId for r in responses}
 
 # -------- Additional Helper Functions --------
 
