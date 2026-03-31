@@ -71,6 +71,21 @@ def _build_item_pools(
 
 
 def _public_item_payload(db_item) -> PublicItem:
+    """
+    Convert a Prisma Item record into a PublicItem dataclass for the API layer.
+
+    Sorts the item's options by label (A→B→C→D) before extracting their
+    display text, ensuring the client always receives options in a consistent
+    order regardless of how the DB returns them. Handles both string labels
+    and enum label values via the isinstance guard.
+
+    Args:
+        db_item: A Prisma Item record with its options relation included.
+
+    Returns:
+        A PublicItem containing the item ID, skill, question stem, ordered
+        option texts, and optional figure URL and reference string.
+    """
     # Order options by label A..D
     options = sorted(
         db_item.options,
@@ -114,6 +129,35 @@ def _find_test_item_by_irt_params(
     return None
 
 
+async def _filter_repeat_correct_items(attempt, items):
+    """
+    If quiz does NOT allow repeats, remove items that this student
+    has previously answered correctly on this quiz.
+    """
+    quiz = await repo.get_quiz(attempt.quizId)
+
+    # If repeats allowed, no filtering
+    if not quiz or getattr(quiz, "repeatCorrectQuestions", True):
+        return items
+
+    # Get all previously correct item IDs for this student + quiz
+    correct_item_ids = await repo.get_correct_item_ids_for_enrollment_and_quiz(
+        enrollment_id=attempt.enrollmentId,
+        quiz_id=attempt.quizId,
+    )
+
+    if not correct_item_ids:
+        return items
+
+    filtered = [it for it in items if it.id not in correct_item_ids]
+
+    # if no unanswered items remain, no items will be returned
+    if not filtered:
+        return None
+
+    return filtered
+
+
 # ---- Orchestration -----------------------------------------------------------
 
 async def init_attempt(
@@ -122,11 +166,46 @@ async def init_attempt(
     prior_mu: float | None,
     prior_sigma2: float | None
 ) -> tuple[dict[str, float], PublicItem | None]:
+    """
+    Initialise an attempt and select the first item to present to the student.
+
+    Loads the attempt and its eligible items from the DB, builds per-concept
+    ItemPools, seeds theta from any prior history stored against the
+    enrollment, constructs the MultidimensionalModel, and selects the first
+    item using the maximum information criterion.
+
+    If modules is provided, the model is scoped to only those concepts;
+    otherwise all concepts present in the item pool are used. prior_mu and
+    prior_sigma2 override the configured defaults when provided, allowing
+    callers to customise the Bayesian prior per attempt.
+
+    Args:
+        attempt_id:   Primary key of the Attempt record to initialise.
+        modules:      Optional list of concept/module IDs to restrict the
+                      session to. Pass None to include all concepts available
+                      in the quiz's item pool.
+        prior_mu:     Optional override for the Normal prior mean. Falls back
+                      to settings.prior_mu when None.
+        prior_sigma2: Optional override for the Normal prior variance. Falls
+                      back to settings.prior_sigma2 when None.
+
+    Returns:
+        A tuple of:
+          - theta:     Dict mapping each concept to its current ability
+                       estimate. Will equal the stored value from a prior
+                       session if one exists, otherwise prior_mu.
+          - next_item: The first PublicItem to show the student, or None if
+                       no eligible items exist for this quiz.
+
+    Raises:
+        ValueError: If attempt_id does not correspond to a known Attempt record.
+    """
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
         raise ValueError("Unknown attempt_id")
 
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
+    items = await _filter_repeat_correct_items(attempt, items)
     if not items:
         # Nothing to ask
         return {}, None
@@ -192,7 +271,7 @@ async def step_attempt(
     response_id: str,
     item_id: str | None = None,
     answer_index: int | None = None
-) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool]:
+) -> tuple[dict[str, float], dict[str, bool], PublicItem | None, bool, bool]:
     """
     Process a response and return the next item.
 
@@ -203,7 +282,7 @@ async def step_attempt(
         answer_index: Fallback answer index if Response lookup fails
 
     Returns:
-        Tuple of (theta values, mastery values, next item, is_finished)
+        Tuple of (theta values, mastery values, next item, is_finished, all_mastered)
     """
     attempt = await repo.get_attempt(attempt_id)
     if not attempt:
@@ -211,9 +290,10 @@ async def step_attempt(
 
     # Pull scope items
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
+    items = await _filter_repeat_correct_items(attempt, items)
     if not items:
         # No items left in scope
-        return {}, {}, None, True
+        return {}, {}, None, True, False
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
