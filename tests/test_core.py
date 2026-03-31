@@ -205,7 +205,10 @@ class TestInitAttempt:
                    return_value={}), \
              patch("service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
-                   return_value=[make_quiz_module()]):
+                   return_value=[make_quiz_module()]), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             theta, public = await init_attempt("attempt1", ["math"], None, None)
 
@@ -234,7 +237,10 @@ class TestInitAttempt:
                    return_value={"math": 1.8}), \
              patch("service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
-                   return_value=[make_quiz_module()]):
+                   return_value=[make_quiz_module()]), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             theta, _ = await init_attempt("attempt1", ["math"], 0.0, 1.0)
 
@@ -257,7 +263,10 @@ class TestInitAttempt:
                    return_value=make_attempt()), \
              patch("service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
-                   return_value=[]):
+                   return_value=[]), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             theta, public = await init_attempt("attempt1", None, None, None)
 
@@ -331,7 +340,10 @@ class TestStepAttempt:
              patch("service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
              patch("service.core.repo.attach_engine_snapshot_to_response",
-                   new_callable=AsyncMock):
+                   new_callable=AsyncMock), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             theta, _, _, _, _ = await step_attempt("attempt1", "resp1")
 
@@ -376,7 +388,10 @@ class TestStepAttempt:
              patch("service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
              patch("service.core.repo.attach_engine_snapshot_to_response",
-                   new_callable=AsyncMock):
+                   new_callable=AsyncMock), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             _, _, next_public, is_finished, _ = await step_attempt("attempt1", "resp1")
 
@@ -423,7 +438,10 @@ class TestStepAttempt:
              patch("service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
              patch("service.core.repo.attach_engine_snapshot_to_response",
-                   mock_attach):
+                   mock_attach), \
+             patch("service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(allowRepeatCorrect=False)):
 
             await step_attempt("attempt1", "resp1")
 
