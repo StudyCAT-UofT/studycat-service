@@ -103,12 +103,11 @@ def _public_item_payload(db_item) -> PublicItem:
 
 def _snapshot_payload(theta: dict[str, float], mastery: dict[str, bool]) -> str:
     """
-    Persisted on Response.engineMasterySnapshot (JSON).
-    Store mastery values as float (0.0-1.0) to match existing data format.
-    Returns JSON string for Prisma compatibility.
+    Build the JSON string persisted on Response.engineMasterySnapshot.
+    Stores the current theta (ability estimate) per skill as floats.
+    Returns a JSON string for Prisma compatibility.
     """
     import json
-    # Convert boolean mastery to float values to match existing data format
     snapshot = {skill: float(theta[skill]) for skill in mastery.keys()}
     return json.dumps(snapshot)
 

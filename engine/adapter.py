@@ -1,8 +1,6 @@
 """
 Adapter that wraps the existing UnidimensionalModel / MultidimensionalModel.
 
-NOTE: To be checked.
-
 Build item pools per concept, initialize the models, apply the last
 response (if provided), and ask the model for the next item.
 """
@@ -15,8 +13,6 @@ from adaptivetesting.math.item_selection import maximum_information_criterion
 from adaptivetesting.models import ItemPool, TestItem
 
 from models.multidimensional import MultidimensionalModel
-
-# Import your wrappers
 
 
 def _make_test_item(a: float, b: float, c: float) -> TestItem:
@@ -38,10 +34,6 @@ def build_multidim_model(
 ) -> MultidimensionalModel:
     """
     Build a MultidimensionalModel with one UnidimensionalModel per concept.
-
-    NOTE:
-    - We keep the ability estimator as BayesModal with NormalPrior(prior_mu, prior_sigma2).
-    - Selection strategy is maximum_information_criterion by default.
     """
     model = MultidimensionalModel(student_id=0, test_id=0)  # IDs not used by library
 

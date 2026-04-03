@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="StudyCAT Quiz Engine",
     version="0.1.0-mvp",
-    description="Stateless FastAPI wrapper around Unidimensional/Multidimensional IRT models",
+    description="Adaptive quiz engine using Unidimensional/Multidimensional IRT models",
     lifespan=lifespan
 )
 
