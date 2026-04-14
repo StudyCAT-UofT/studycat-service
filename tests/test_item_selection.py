@@ -31,7 +31,11 @@ class TestItemSelection:
         chosen item's b-parameter is within 0.01 of 0.0 and that the correct
         skill label is returned alongside it.
         """
-        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, choose_next_item
+        from studycat_service.engine.adapter import (
+            _make_test_item,
+            build_multidim_model,
+            choose_next_item,
+        )
 
         items = [
             _make_test_item(a=1.0, b=-2.0, c=0.0),
@@ -60,7 +64,11 @@ class TestItemSelection:
         item's a-parameter equals 2.0 using pytest.approx to handle
         floating-point comparison safely.
         """
-        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, choose_next_item
+        from studycat_service.engine.adapter import (
+            _make_test_item,
+            build_multidim_model,
+            choose_next_item,
+        )
 
         low_a  = _make_test_item(a=0.5, b=0.0, c=0.0)
         high_a = _make_test_item(a=2.0, b=0.0, c=0.0)
@@ -85,7 +93,11 @@ class TestItemSelection:
         pool-internal reference to satisfy identity checks), then asserts both
         return values are None.
         """
-        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, choose_next_item
+        from studycat_service.engine.adapter import (
+            _make_test_item,
+            build_multidim_model,
+            choose_next_item,
+        )
 
         item = _make_test_item(1.0, 0.0, 0.25)
         model = build_multidim_model(
@@ -111,7 +123,11 @@ class TestItemSelection:
         to choose_next_item should therefore select from math. Verifies the
         returned skill label is 'math'.
         """
-        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, choose_next_item
+        from studycat_service.engine.adapter import (
+            _make_test_item,
+            build_multidim_model,
+            choose_next_item,
+        )
 
         item_math    = _make_test_item(1.0, 0.0, 0.2)
         item_reading = _make_test_item(1.0, 0.0, 0.2)

@@ -282,7 +282,9 @@ class TestInitAttempt:
         """
         from studycat_service.service.core import init_attempt
 
-        with patch("studycat_service.service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
+        with patch("studycat_service.service.core.repo.get_attempt",
+                   new_callable=AsyncMock,
+                   return_value=None):
             with pytest.raises(ValueError, match="Unknown attempt_id"):
                 await init_attempt("bad", None, None, None)
 
@@ -457,6 +459,8 @@ class TestStepAttempt:
         """
         from studycat_service.service.core import step_attempt
 
-        with patch("studycat_service.service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
+        with patch("studycat_service.service.core.repo.get_attempt",
+                   new_callable=AsyncMock,
+                   return_value=None):
             with pytest.raises(ValueError, match="Unknown attempt_id"):
                 await step_attempt("bad", "resp1")
