@@ -11,8 +11,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-import routers
-from db.client import db
+from . import routers
+from .db.client import db
 
 
 @asynccontextmanager

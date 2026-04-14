@@ -1,3 +1,42 @@
+[build-system]
+requires = ["uv_build>=0.11.6,<0.12"]
+build-backend = "uv_build"
+
+[project]
+name = "studycat-service"
+version = "0.1.0"
+description = "The CAT service for the StudyCAT project."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Paarth Arya" },
+    { name = "Jayden Chiolo-Nakai" },
+    { name = "Jason Wang" }
+]
+maintainers = [
+    { name = "David Liu", email = "david@cs.toronto.edu" }
+]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "prisma",
+    "python-dotenv",
+    "adaptivetesting"
+]
+
+[dependency-groups]
+
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "pytest-cov",
+    "pytest-watch"
+]
+
+
 [tool.ruff]
 # Set the maximum line length to 99
 line-length = 99
@@ -31,16 +70,17 @@ select = [
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["studycat"]
+known-first-party = ["studycat_service"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+pythonpath = ["src"]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -51,9 +91,6 @@ omit = [
     "*/htmlcov/*",
     "*/migrations/*",
     "setup.py",
-    "config.py",
-    "main.py",
-    "schemas.py",
 ]
 
 [tool.coverage.report]
@@ -66,4 +103,3 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
-

@@ -12,14 +12,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from schemas import (
+from .schemas import (
     AttemptInitRequest,
     AttemptInitResponse,
     AttemptStepRequest,
     AttemptStepResponse,
     ItemPayload,
 )
-from service.core import PublicItem, init_attempt, step_attempt
+from .service.core import PublicItem, init_attempt, step_attempt
 
 router = APIRouter(tags=["engine"])
 
