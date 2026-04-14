@@ -2,32 +2,21 @@
 
 A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a SQL Server database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
 
-## API Endpoints
-
-### Health Check
-
-- `GET /v1/health` - Service health status
-
-### Quiz Management
-
-- `POST /v1/attempts/{attempt_id}/init` - Initialize a quiz attempt and get first question
-- `POST /v1/attempts/{attempt_id}/step` - Process response and get next question
-
 ## Quick Start
 
 ### Prerequisites
 
-1. **Python 3.13+**
+1. **Python 3.12+**
 2. **SQL Server database** (see Database Setup below)
 3. **Environment variables** (see Configuration below)
 
 ### Details
 
-The StudyCAT quiz engine uses a SQL Server database running in a Docker container. The connection details are stored in the .env file in the root directory.
+The StudyCAT quiz engine uses a SQL Server database running in a Docker container. The connection details are stored in the `.env` file in the root directory.
 
-For local development, duplicate the .env.example file in the root directory and name it .env
+For local development, duplicate the `.env.example` file in the root directory and name it `.env`.
 
-For local development, start the Docker container with the local database server in the studycat repository by following the instructions in the README.md in the studycat repository.
+For local development, start the Docker container with the local database server in the `studycat` repository by following the instructions in its `README.md`.
 
 Both the StudyCAT quiz engine (`studycat-service`) and the StudyCAT web application (`studycat`) use the same database. To ensure alignment between the two repositories, we are using Prisma to define the database schema and handle the database migrations. The `studycat-schema` repository contains the Prisma schema and migrations for the database.
 
@@ -45,31 +34,33 @@ This repository installs the `studycat-schema` repository as a submodule.
 2. **Create virtual environment and install dependencies:**
 
    ```bash
-   make venv install
+   uv sync
    ```
 
 3. **Set up database submodule:**
 
    ```bash
-   make submodule-update
+   git submodule update --init --recursive
    ```
 
 4. **Generate Prisma client:**
 
    ```bash
-   make db-generate
+   uv run prisma generate --schema external/studycat-schema/schema.prisma --generator py
    ```
 
 5. **Configure environment:**
 
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database connection details
-   ```
+    In development, you can simply use the existing `.env.example` file:
+
+    ```bash
+    cp .env.example .env
+    ```
 
 6. **Start the service:**
+
    ```bash
-   make run
+   uv run uvicorn studycat_service.main:app --app-dir=src --reload --host=0.0.0.0 --port=8000
    ```
 
 ## API Usage Examples
@@ -141,13 +132,13 @@ The `next_action` field in step responses drives client-side navigation:
 
 ### Core Components
 
-- **`main.py`** - FastAPI application with database lifespan management
-- **`routers.py`** - API route definitions and request/response handling
-- **`schemas.py`** - Pydantic models for request/response validation
-- **`service/core.py`** - Main business logic and IRT model integration
-- **`db/repo.py`** - Database repository layer with Prisma queries
-- **`engine/adapter.py`** - IRT model adapter and item selection logic
-- **`models/`** - IRT model implementations (Unidimensional/Multidimensional)
+- **`src/studycat_service/main.py`** - FastAPI application with database lifespan management
+- **`src/studycat_service/routers.py`** - API route definitions and request/response handling
+- **`src/studycat_service/schemas.py`** - Pydantic models for request/response validation
+- **`src/studycat_service/service/core.py`** - Main business logic and IRT model integration
+- **`src/studycat_service/db/repo.py`** - Database repository layer with Prisma queries
+- **`src/studycat_service/engine/adapter.py`** - IRT model adapter and item selection logic
+- **`src/studycat_service/models/`** - IRT model implementations (Unidimensional/Multidimensional)
 
 ### Data Flow
 
@@ -178,45 +169,60 @@ Theta values (ability estimates) are persisted per enrollment and module in the 
 
 If a quiz has `repeatCorrectQuestions` set to `false`, the engine automatically removes any items the student has previously answered correctly (across all past attempts for that quiz and enrollment) before building the item pool. If no unanswered items remain after filtering, the attempt ends immediately.
 
+## API Endpoints
+
+### Health Check
+
+- `GET /v1/health` - Service health status
+
+### Quiz Management
+
+- `POST /v1/attempts/{attempt_id}/init` - Initialize a quiz attempt and get first question
+- `POST /v1/attempts/{attempt_id}/step` - Process response and get next question
+
 ## Development
 
 ### Project Structure
 
 ```
 studycat-service/
-├── main.py                 # FastAPI application
-├── routers.py              # API routes
-├── schemas.py              # Pydantic models
-├── config.py               # Settings
+├── src/
+│   └── studycat_service/
+│       ├── main.py             # FastAPI application
+│       ├── routers.py          # API routes
+│       ├── schemas.py          # Pydantic models
+│       ├── config.py           # Settings
+│       ├── service/
+│       │   └── core.py         # Main business logic
+│       ├── db/
+│       │   ├── client.py       # Prisma client singleton
+│       │   └── repo.py         # Database queries
+│       ├── engine/
+│       │   └── adapter.py      # IRT model adapter
+│       └── models/
+│           ├── unidimensional.py   # Unidimensional IRT model
+│           ├── multidimensional.py # Multidimensional IRT model
+│           └── README.md           # Models documentation
+├── tests/
+│   └── test_*.py           # Unit tests
 ├── requirements.txt        # Python dependencies
 ├── Makefile                # Dev task runner
 ├── pyproject.toml          # Linting/tool config
-├── service/
-│   └── core.py             # Main business logic
-├── db/
-│   ├── client.py           # Prisma client singleton
-│   └── repo.py             # Database queries
-├── engine/
-│   └── adapter.py          # IRT model adapter
-├── models/
-│   ├── unidimensional.py   # Unidimensional IRT model
-│   ├── multidimensional.py # Multidimensional IRT model
-│   └── README.md           # Models documentation
-├── tests/
-│   └── test_core.py        # Unit tests
 └── external/
     └── studycat-schema/    # Database schema (submodule)
 ```
 
 ### Testing
 
+Run the test suite:
+
 ```bash
-# Run unit tests
-make test
+# Run test suite. Add `--cov` to generate test coverage.
+uv run pytest
+```
 
-# Run with coverage report
-make test-coverage
+Test health endpoint manually:
 
-# Test health endpoint manually
+```bash
 curl -X GET "http://localhost:8000/v1/health"
 ```

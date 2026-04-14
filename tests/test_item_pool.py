@@ -25,7 +25,7 @@ class TestBuildItemPools:
         dict has the correct key set and that each pool contains the right
         number of TestItems.
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         items = [
             make_db_item("math",    item_id="m1"),
@@ -43,7 +43,7 @@ class TestBuildItemPools:
         and one inactive math item and asserts that only the active item
         appears in the pool and in the testitem_to_itemid reverse map.
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         items = [
             make_db_item("math", active=True,  item_id="active"),
@@ -61,7 +61,7 @@ class TestBuildItemPools:
         item and confirms only the valid item ends up in the pool and the
         reverse map.
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         item_no_params = make_db_item("math", item_id="no_irt")
         item_no_params.irtA = None
@@ -77,7 +77,7 @@ class TestBuildItemPools:
         must be skipped entirely. Asserts that the returned pools dict is
         empty when the only input item has no moduleId.
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         item = make_db_item("math", item_id="no_module")
         item.moduleId = None
@@ -91,7 +91,7 @@ class TestBuildItemPools:
         b-parameters so they produce distinct TestItems) and asserts the set
         of values in ti2skill equals {"math", "reading"}.
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         items = [make_db_item("math"), make_db_item("reading", b=1.0)]
         _, _, _, ti2skill = _build_item_pools(items)
@@ -105,7 +105,7 @@ class TestBuildItemPools:
         thetas and when choosing the next item. Passes concepts in reverse
         alphabetical order and asserts the output matches sorted().
         """
-        from service.core import _build_item_pools
+        from studycat_service.service.core import _build_item_pools
 
         items = [
             make_db_item("zebra"),

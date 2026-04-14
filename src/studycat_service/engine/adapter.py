@@ -12,7 +12,7 @@ from adaptivetesting.math.estimators import BayesModal, NormalPrior
 from adaptivetesting.math.item_selection import maximum_information_criterion
 from adaptivetesting.models import ItemPool, TestItem
 
-from models.multidimensional import MultidimensionalModel
+from studycat_service.models.multidimensional import MultidimensionalModel
 
 
 def _make_test_item(a: float, b: float, c: float) -> TestItem:

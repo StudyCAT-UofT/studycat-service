@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from service.core import _index_from_label, _label_from_index
+from studycat_service.service.core import _index_from_label, _label_from_index
 
 # ---------------------------------------------------------------------------
 # _label_from_index / _index_from_label
@@ -57,7 +57,7 @@ class TestSnapshotPayload:
         dict without raising an exception. Uses two skills to confirm the
         serialiser handles multiple entries correctly.
         """
-        from service.core import _snapshot_payload
+        from studycat_service.service.core import _snapshot_payload
 
         parsed = json.loads(_snapshot_payload(
             {"math": 0.75, "reading": -0.3},
@@ -72,7 +72,7 @@ class TestSnapshotPayload:
         Checks a single skill whose boolean mastery flag True should have been
         converted to float(theta) rather than stored as 1.0 from the bool.
         """
-        from service.core import _snapshot_payload
+        from studycat_service.service.core import _snapshot_payload
 
         parsed = json.loads(_snapshot_payload({"math": 1.2}, {"math": True}))
         assert isinstance(parsed["math"], float)
@@ -85,7 +85,7 @@ class TestSnapshotPayload:
         out-of-scope skills from leaking into the snapshot stored on the
         response record.
         """
-        from service.core import _snapshot_payload
+        from studycat_service.service.core import _snapshot_payload
 
         parsed = json.loads(_snapshot_payload(
             {"math": 0.5, "extra_skill": 1.0},
@@ -132,7 +132,7 @@ class TestPublicItemPayload:
         PublicItem dataclass. Checks each field individually so a renaming
         regression points directly to the affected attribute.
         """
-        from service.core import _public_item_payload
+        from studycat_service.service.core import _public_item_payload
 
         result = _public_item_payload(self._make_db_item())
         assert result.item_id    == "item-abc"
@@ -148,7 +148,7 @@ class TestPublicItemPayload:
         in A-D order already; the test checks the text values that correspond
         to that label order are ["1", "4", "3", "2"].
         """
-        from service.core import _public_item_payload
+        from studycat_service.service.core import _public_item_payload
 
         result = _public_item_payload(self._make_db_item())
         assert result.options == ["1", "4", "3", "2"]
@@ -159,7 +159,7 @@ class TestPublicItemPayload:
         option objects or labels. Iterates every element to confirm no mock
         objects or label values were accidentally included.
         """
-        from service.core import _public_item_payload
+        from studycat_service.service.core import _public_item_payload
 
         result = _public_item_payload(self._make_db_item())
         for opt in result.options:
@@ -192,21 +192,21 @@ class TestInitAttempt:
         basic wiring between pool construction, model initialisation, and item
         selection all work end-to-end.
         """
-        from service.core import init_attempt
+        from studycat_service.service.core import init_attempt
 
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=make_attempt()), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[make_db_item()]), \
-             patch("service.core.repo.get_thetas_for_enrollment",
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
                    new_callable=AsyncMock,
                    return_value={}), \
-             patch("service.core.repo.get_quiz_modules",
+             patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module()]), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -225,20 +225,20 @@ class TestInitAttempt:
         equal the stored value (1.8) rather than the default prior_mu.
         Confirms that historical progress is not discarded on re-entry.
         """
-        from service.core import init_attempt
+        from studycat_service.service.core import init_attempt
 
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=make_attempt()), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock, return_value=[make_db_item()]), \
-             patch("service.core.repo.get_thetas_for_enrollment",
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
                    new_callable=AsyncMock,
                    return_value={"math": 1.8}), \
-             patch("service.core.repo.get_quiz_modules",
+             patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module()]), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -256,15 +256,15 @@ class TestInitAttempt:
         empty theta dict and None for the public item without raising an
         exception.
         """
-        from service.core import init_attempt
+        from studycat_service.service.core import init_attempt
 
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=make_attempt()), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[]), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -280,9 +280,9 @@ class TestInitAttempt:
         init_attempt should raise ValueError with a message containing
         'Unknown attempt_id' so callers can return an appropriate HTTP 404.
         """
-        from service.core import init_attempt
+        from studycat_service.service.core import init_attempt
 
-        with patch("service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
+        with patch("studycat_service.service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
             with pytest.raises(ValueError, match="Unknown attempt_id"):
                 await init_attempt("bad", None, None, None)
 
@@ -317,31 +317,31 @@ class TestStepAttempt:
         resulting theta is propagated back to the caller correctly. Uses
         fixed_length=5 so the attempt is not immediately finished.
         """
-        from service.core import step_attempt
+        from studycat_service.service.core import step_attempt
 
         attempt  = make_attempt(fixed_length=5)
         db_item  = make_db_item()
         response = make_response("resp1", db_item, is_correct=True)
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=attempt), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[db_item]), \
-             patch("service.core.repo.get_quiz_modules",
+             patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
-             patch("service.core.repo.list_responses",
+             patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
-             patch("service.core.repo.get_response_by_id",
+             patch("studycat_service.service.core.repo.get_response_by_id",
                    new_callable=AsyncMock,
                    return_value=response), \
-             patch("service.core.repo.upsert_theta",
+             patch("studycat_service.service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
-             patch("service.core.repo.attach_engine_snapshot_to_response",
+             patch("studycat_service.service.core.repo.attach_engine_snapshot_to_response",
                    new_callable=AsyncMock), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -364,32 +364,32 @@ class TestStepAttempt:
         is hit immediately. Confirms the fixed-length stopping rule is enforced
         even when items remain in the pool.
         """
-        from service.core import step_attempt
+        from studycat_service.service.core import step_attempt
 
         attempt  = make_attempt(fixed_length=1)
         db_item  = make_db_item()
         response = make_response("resp1", db_item, is_correct=True)
 
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=attempt), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[db_item]), \
-             patch("service.core.repo.get_quiz_modules",
+             patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
-             patch("service.core.repo.list_responses",
+             patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
-             patch("service.core.repo.get_response_by_id",
+             patch("studycat_service.service.core.repo.get_response_by_id",
                    new_callable=AsyncMock,
                    return_value=response), \
-             patch("service.core.repo.upsert_theta",
+             patch("studycat_service.service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
-             patch("service.core.repo.attach_engine_snapshot_to_response",
+             patch("studycat_service.service.core.repo.attach_engine_snapshot_to_response",
                    new_callable=AsyncMock), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -413,33 +413,33 @@ class TestStepAttempt:
         attach call and asserts assert_awaited_once() to confirm the repo
         write happened and was not accidentally called twice or skipped.
         """
-        from service.core import step_attempt
+        from studycat_service.service.core import step_attempt
 
         attempt     = make_attempt(fixed_length=5)
         db_item     = make_db_item()
         response    = make_response("resp1", db_item, is_correct=True)
         mock_attach = AsyncMock()
 
-        with patch("service.core.repo.get_attempt",
+        with patch("studycat_service.service.core.repo.get_attempt",
                    new_callable=AsyncMock,
                    return_value=attempt), \
-             patch("service.core.repo.list_eligible_items_for_quiz",
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[db_item]), \
-             patch("service.core.repo.get_quiz_modules",
+             patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
-             patch("service.core.repo.list_responses",
+             patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
-             patch("service.core.repo.get_response_by_id",
+             patch("studycat_service.service.core.repo.get_response_by_id",
                    new_callable=AsyncMock,
                    return_value=response), \
-             patch("service.core.repo.upsert_theta",
+             patch("studycat_service.service.core.repo.upsert_theta",
                    new_callable=AsyncMock), \
-             patch("service.core.repo.attach_engine_snapshot_to_response",
+             patch("studycat_service.service.core.repo.attach_engine_snapshot_to_response",
                    mock_attach), \
-             patch("service.core.repo.get_quiz",
+             patch("studycat_service.service.core.repo.get_quiz",
                    new_callable=AsyncMock,
                    return_value=MagicMock(allowRepeatCorrect=False)):
 
@@ -455,8 +455,8 @@ class TestStepAttempt:
         mirrors init_attempt's behaviour and ensures callers receive a clear
         error they can map to an HTTP 404 rather than a downstream AttributeError.
         """
-        from service.core import step_attempt
+        from studycat_service.service.core import step_attempt
 
-        with patch("service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
+        with patch("studycat_service.service.core.repo.get_attempt", new_callable=AsyncMock, return_value=None):
             with pytest.raises(ValueError, match="Unknown attempt_id"):
                 await step_attempt("bad", "resp1")

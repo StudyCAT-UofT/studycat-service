@@ -7,15 +7,15 @@ from dataclasses import dataclass
 
 from adaptivetesting.models import ItemPool, TestItem
 
-from config import settings
-from db import repo
-from engine.adapter import (
+from studycat_service.config import settings
+from studycat_service.db import repo
+from studycat_service.engine.adapter import (
     _make_test_item,
     build_multidim_model,
     choose_next_item,
     determine_all_mastered,
 )
-from models.multidimensional import MultidimensionalModel
+from studycat_service.models.multidimensional import MultidimensionalModel
 
 
 @dataclass

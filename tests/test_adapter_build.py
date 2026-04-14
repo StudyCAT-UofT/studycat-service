@@ -24,7 +24,7 @@ class TestBuildMultidimModel:
         Helper: build a MultidimensionalModel for the given concepts using two
         generic items per pool and uniform mastery thresholds.
         """
-        from engine.adapter import _make_test_item, build_multidim_model
+        from studycat_service.engine.adapter import _make_test_item, build_multidim_model
 
         items = [_make_test_item(1.0, 0.0, 0.25), _make_test_item(1.2, 0.5, 0.2)]
         pool  = ItemPool(list(items))

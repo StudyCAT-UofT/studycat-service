@@ -7,7 +7,7 @@ from typing import Any
 
 from prisma.models import Attempt, Item, Quiz, QuizModule, Response, Theta
 
-from db.client import db
+from studycat_service.db.client import db
 
 # -------- Attempts / Quiz --------
 

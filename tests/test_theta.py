@@ -25,7 +25,7 @@ class TestThetaGrowth:
         Build a single-concept model with three items at b=-1, 0, +1 and
         return it together with the live pool references.
         """
-        from engine.adapter import _make_test_item, build_multidim_model
+        from studycat_service.engine.adapter import _make_test_item, build_multidim_model
 
         items = [
             _make_test_item(a=1.0, b=-1.0, c=0.2),

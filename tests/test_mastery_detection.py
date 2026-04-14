@@ -23,7 +23,7 @@ class TestMasteryDetection:
         which is well below 3.0. Confirms the base case: mastery is not granted
         by default, only after sufficient correct responses.
         """
-        from engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
+        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
 
         item = _make_test_item(1.0, 0.0, 0.25)
         model = build_multidim_model(
@@ -44,7 +44,7 @@ class TestMasteryDetection:
         value in the failure message to make debugging straightforward if the
         threshold arithmetic changes.
         """
-        from engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
+        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
 
         items = [_make_test_item(2.0, float(b), 0.0) for b in range(-3, 1)]
         model = build_multidim_model(
@@ -69,7 +69,7 @@ class TestMasteryDetection:
         untouched. Asserts the result is still False, confirming the AND
         semantics (all skills must be mastered, not just any one).
         """
-        from engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
+        from studycat_service.engine.adapter import _make_test_item, build_multidim_model, determine_all_mastered
 
         items = [_make_test_item(2.0, float(b), 0.0) for b in range(-3, 1)]
         model = build_multidim_model(
