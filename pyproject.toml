@@ -1,9 +1,21 @@
+[build-system]
+requires = ["uv_build>=0.11.6,<0.12"]
+build-backend = "uv_build"
+
 [project]
 name = "studycat-service"
 version = "0.1.0"
 description = "The CAT service for the StudyCAT project."
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [
+    { name = "Paarth Arya" },
+    { name = "Jayden Chiolo-Nakai" },
+    { name = "Jason Wang" }
+]
+maintainers = [
+    { name = "David Liu", email = "david@cs.toronto.edu" }
+]
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -56,9 +68,6 @@ select = [
 
 # Ignore specific rules
 ignore = []
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["studycat_service"]
