@@ -307,6 +307,18 @@ async def step_attempt(
         mastery_thresholds=thr,
     )
 
+    # Load existing theta values from database
+    existing_thetas = await repo.get_thetas_for_enrollment(
+        attempt.enrollmentId,
+        concepts,
+    )
+
+    # Initialize model with existing theta values if available
+    for concept in concepts:
+        if concept in existing_thetas:
+            # Set the theta value in the model
+            model.models[concept].set_theta(existing_thetas[concept])
+
     # Load all previous responses for this attempt and replay them
     all_responses = await repo.list_responses(attempt_id)
     for prev_response in all_responses:
