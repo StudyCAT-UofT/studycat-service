@@ -333,6 +333,9 @@ class TestStepAttempt:
              patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
+                   new_callable=AsyncMock,
+                   return_value={}), \
              patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
@@ -381,6 +384,9 @@ class TestStepAttempt:
              patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
+                   new_callable=AsyncMock,
+                   return_value={}), \
              patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
@@ -431,6 +437,9 @@ class TestStepAttempt:
              patch("studycat_service.service.core.repo.get_quiz_modules",
                    new_callable=AsyncMock,
                    return_value=[make_quiz_module(threshold=2.0)]), \
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
+                   new_callable=AsyncMock,
+                   return_value={}), \
              patch("studycat_service.service.core.repo.list_responses",
                    new_callable=AsyncMock,
                    return_value=[response]), \
@@ -448,6 +457,58 @@ class TestStepAttempt:
             await step_attempt("attempt1", "resp1")
 
         mock_attach.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_prior_theta_is_seeded_before_response_applied(
+        self,
+        make_db_item,
+        make_quiz_module,
+        make_attempt,
+        make_response,
+        ):
+        """
+        When the enrollment has a stored theta from a previous attempt,
+        step_attempt must seed the model with that value before applying
+        the current response. A correct response on top of a seeded theta
+        of 1.8 should produce a theta strictly greater than 1.8. Uses a seeded
+        theta of 1.8 and fixed_length=5 so the attempt is not immediately
+        finished and the updated theta is returned.
+        """
+        from studycat_service.service.core import step_attempt
+
+        attempt  = make_attempt(fixed_length=5)
+        db_item  = make_db_item()
+        response = make_response("resp1", db_item, is_correct=True)
+
+        with patch("studycat_service.service.core.repo.get_attempt",
+                   new_callable=AsyncMock,
+                   return_value=attempt), \
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
+                   new_callable=AsyncMock,
+                   return_value=[db_item]), \
+             patch("studycat_service.service.core.repo.get_quiz_modules",
+                   new_callable=AsyncMock,
+                   return_value=[make_quiz_module(threshold=2.0)]), \
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
+                   new_callable=AsyncMock,
+                   return_value={"math": 1.8}), \
+             patch("studycat_service.service.core.repo.list_responses",
+                   new_callable=AsyncMock,
+                   return_value=[response]), \
+             patch("studycat_service.service.core.repo.get_response_by_id",
+                   new_callable=AsyncMock,
+                   return_value=response), \
+             patch("studycat_service.service.core.repo.upsert_theta",
+                   new_callable=AsyncMock), \
+             patch("studycat_service.service.core.repo.attach_engine_snapshot_to_response",
+                   new_callable=AsyncMock), \
+             patch("studycat_service.service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(repeatCorrectQuestions=True)):
+
+            theta, _, _, _, _ = await step_attempt("attempt1", "resp1")
+
+        assert theta["math"] > 1.8
 
     @pytest.mark.asyncio
     async def test_unknown_attempt_raises(self):
