@@ -233,13 +233,8 @@ async def init_attempt(
         prior_mu=prior_mu if prior_mu is not None else settings.prior_mu,
         prior_sigma2=prior_sigma2 if prior_sigma2 is not None else settings.prior_sigma2,
         mastery_thresholds=thr,
+        existing_thetas=existing_thetas,
     )
-
-    # Initialize model with existing theta values if available
-    for concept in effective_concepts:
-        if concept in existing_thetas:
-            # Set the theta value in the model
-            model.models[concept].set_theta(existing_thetas[concept])
 
     # Choose first item
     next_item, chosen_skill = choose_next_item(model)
@@ -296,6 +291,13 @@ async def step_attempt(
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
+
+    # Load existing theta values from database
+    existing_thetas = await repo.get_thetas_for_enrollment(
+        attempt.enrollmentId,
+        concepts,
+    )
+
     quiz_modules = await repo.get_quiz_modules(attempt.quizId)
     module_thresholds = {qm.moduleId: qm.masteryThreshold for qm in quiz_modules}
     thr = {c: module_thresholds[c] for c in concepts}
@@ -305,6 +307,7 @@ async def step_attempt(
         prior_mu=settings.prior_mu,
         prior_sigma2=settings.prior_sigma2,
         mastery_thresholds=thr,
+        existing_thetas=existing_thetas,
     )
 
     # Load all previous responses for this attempt and replay them

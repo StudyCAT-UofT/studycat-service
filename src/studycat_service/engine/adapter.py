@@ -31,23 +31,31 @@ def build_multidim_model(
     prior_mu: float,
     prior_sigma2: float,
     mastery_thresholds: dict[str, float],
+    existing_thetas: dict[str, float] | None = None,
 ) -> MultidimensionalModel:
     """
     Build a MultidimensionalModel with one UnidimensionalModel per concept.
     """
     model = MultidimensionalModel(student_id=0, test_id=0)  # IDs not used by library
 
+    if existing_thetas is None:
+        existing_thetas = {}
+
     for concept in concepts:
         pool = pools_by_concept.get(concept, ItemPool([]))
         thr = mastery_thresholds.get(concept, 1.0)
+
+        # Use stored theta as the starting point if it exists, otherwise use global default
+        concept_mu = existing_thetas.get(concept, prior_mu)
+
         model.add_model(
             skill=concept,
             mastery_threshold=thr,
             item_pool=pool,
-            initial_theta=prior_mu,
+            initial_theta=concept_mu,
             ability_estimator=BayesModal,
             estimator_args={
-                "prior": NormalPrior(prior_mu, prior_sigma2),
+                "prior": NormalPrior(concept_mu, prior_sigma2),
                 "optimization_interval": (-4, 4),
             },
             item_selector=maximum_information_criterion,
