@@ -375,7 +375,7 @@ async def step_attempt(
 
     # Compute current theta and naive mastery
     theta = {s: m.get_theta() for s, m in model.models.items()}
-    mastery = {s: (theta[s] >= thr[s]) for s in theta}
+    mastery = {s: (theta[s] > thr[s]) for s in theta}
 
     # Persist theta values to database
     for module_id, theta_value in theta.items():
