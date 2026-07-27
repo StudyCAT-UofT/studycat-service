@@ -289,6 +289,15 @@ async def step_attempt(
         # No items left in scope
         return {}, {}, None, True, False
 
+    response = await repo.get_response_by_id(response_id)
+    all_responses = await repo.list_responses(attempt_id)
+
+    seen_ids = {r.itemId for r in all_responses}
+    if response:
+        seen_ids.add(response.itemId)
+
+    items = [q for q in items if q.id not in seen_ids]
+
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
 
@@ -310,8 +319,7 @@ async def step_attempt(
         existing_thetas=existing_thetas,
     )
 
-    # Load all previous responses for this attempt and replay them
-    all_responses = await repo.list_responses(attempt_id)
+    # Replay previous responses for this attempt
     for prev_response in all_responses:
         # Skip the current response (we'll process it separately)
         if prev_response.id == response_id:
@@ -329,8 +337,6 @@ async def step_attempt(
         if prev_ti:
             model.models[skill].record_response(1 if is_correct else 0, prev_ti)
 
-    # Fetch the Response record by response_id
-    response = await repo.get_response_by_id(response_id)
     used_response_id: str | None = None
 
     if response:
