@@ -295,8 +295,8 @@ async def step_attempt(
     items = [q for q in items if q.id not in seen_ids]
 
     if not items:
-            # No items left in scope
-            return {}, {}, None, True, False
+        # No items left in scope
+        return {}, {}, None, True, False
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
