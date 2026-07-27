@@ -285,10 +285,6 @@ async def step_attempt(
     # Pull scope items
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
     items = await _filter_repeat_correct_items(attempt, items)
-    if not items:
-        # No items left in scope
-        return {}, {}, None, True, False
-
     response = await repo.get_response_by_id(response_id)
     all_responses = await repo.list_responses(attempt_id)
 
@@ -297,6 +293,10 @@ async def step_attempt(
         seen_ids.add(response.itemId)
 
     items = [q for q in items if q.id not in seen_ids]
+
+    if not items:
+            # No items left in scope
+            return {}, {}, None, True, False
 
     # Build pools/model
     concepts, pools, ti2id, ti2skill = _build_item_pools(items)
