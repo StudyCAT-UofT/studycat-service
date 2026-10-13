@@ -13,5 +13,9 @@ class Settings(BaseModel):
     prior_mu: float = 0.0
     prior_sigma2: float = 1.0
 
+    # Database connection retries on startup (e.g. while the database is still starting)
+    db_connect_attempts: int = 5
+    db_connect_retry_delay_s: float = 2.0
+
 
 settings = Settings()
