@@ -63,6 +63,10 @@ This repository installs the `studycat-schema` repository as a submodule.
    uv run uvicorn studycat_service.main:app --app-dir=src --reload --host=0.0.0.0 --port=8000
    ```
 
+### Running with Docker
+
+The `studycat` repository's `docker-compose.yml` can run this service alongside the database and web app, using [Dockerfile.dev](Dockerfile.dev). See "Getting Started with Docker" in the `studycat` README. The source in `src/` is bind-mounted and hot-reloads; rebuild the image (`docker compose up -d --build service`) after changing dependencies or the schema submodule.
+
 ## API Usage Examples
 
 ### Initialize Quiz Attempt
