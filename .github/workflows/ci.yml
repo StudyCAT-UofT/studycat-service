@@ -49,7 +49,7 @@ jobs:
         run: |
           uv run prisma generate --schema external/studycat-schema/schema.prisma --generator py
         env:
-          DATABASE_URL: sqlserver://localhost:1433;database=studycat;user=sa;password=Password123!;encrypt=false;trustServerCertificate=true
+          DATABASE_URL: postgresql://catalyze:catalyzePassword123!@localhost:5432/catalyze?schema=public
 
       - name: Run tests
         run: uv run pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
