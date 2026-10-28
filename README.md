@@ -1,18 +1,18 @@
 # StudyCAT Quiz Engine Service
 
-A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a SQL Server database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
+A FastAPI-based adaptive testing service that uses Item Response Theory (IRT) models to provide personalized quiz experiences. The service integrates with a PostgreSQL database and implements both Unidimensional and Multidimensional IRT models using AdaptiveTesting for item selection.
 
 ## Quick Start
 
 ### Prerequisites
 
 1. **Python 3.12+**
-2. **SQL Server database** (see Database Setup below)
+2. **PostgreSQL database** (see Database Setup below)
 3. **Environment variables** (see Configuration below)
 
 ### Details
 
-The StudyCAT quiz engine uses a SQL Server database running in a Docker container. The connection details are stored in the `.env` file in the root directory.
+The StudyCAT quiz engine uses a PostgreSQL database running in a Docker container. The connection details are stored in the `.env` file in the root directory.
 
 For local development, duplicate the `.env.example` file in the root directory and name it `.env`.
 
