@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -12,18 +12,19 @@ resolution-markers = [
 
 [[package]]
 name = "adaptivetesting"
-version = "1.1.6"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
+    { name = "numdifftools" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "scipy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/0f/603cff0881024afb5491a821e4853f83853275af8079de192eb44b02deb5/adaptivetesting-1.1.6.tar.gz", hash = "sha256:b2c6cf9cd41cf3dac80aa17aca31343473fdf56c8abcb1557031505b01b9d4d3", size = 312915, upload-time = "2026-03-11T08:25:35.345Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/74/8ca5d7c8a2ad26fe69afee7b7f2d20ca8d4662a0d1160431f14a54f058fb/adaptivetesting-1.2.1.tar.gz", hash = "sha256:3e7034a5675bd2d94ae5548424f4dc9b83409f98cb8e18acdfd20b90d6a27bd0", size = 67710, upload-time = "2026-06-29T08:36:15.304Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/db/4235f024b09a39e830efe87b6da1dc61e74bbdd2fbb466083420ac9f7d41/adaptivetesting-1.1.6-py3-none-any.whl", hash = "sha256:49688b59c574e6d079e0578ad78f018473c2c5e9cd54bbc062ae4004ad65013b", size = 63901, upload-time = "2026-03-11T08:25:33.762Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/12/8a1c136e1a86fe250351148b3d1585fdd9c85726b2ebd0e16bcf7ecda279/adaptivetesting-1.2.1-py3-none-any.whl", hash = "sha256:57dda94eaf2cca1e54c615aecc79fe569b46054b1a4ff5120806b9890a31403c", size = 98092, upload-time = "2026-06-29T08:36:14.244Z" },
 ]
 
 [[package]]
@@ -615,6 +616,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
+]
+
+[[package]]
+name = "numdifftools"
+version = "0.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c9/9a/cffaad9e8443d4e04f89f44b8ceb3a6886d6fb529737e6dacc0d2d70fbe0/numdifftools-0.11.2.tar.gz", hash = "sha256:0508bbcea72f4706d8f4d518812bec11949d75bd0656047777d4e36357322344", size = 82603, upload-time = "2026-10-25T23:11:52.281Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/7c/9f48699da472a5c5141bdf3f52ae1767a8cee76abfe8f5169705db58a734/numdifftools-0.11.2-py3-none-any.whl", hash = "sha256:1281419f8c63068bc41a0c8b1b52cd644582621f4208e61cbf80eaed5591585f", size = 97817, upload-time = "2026-10-25T23:11:50.92Z" },
 ]
 
 [[package]]
