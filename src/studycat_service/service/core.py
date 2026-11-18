@@ -205,6 +205,12 @@ async def init_attempt(
 
     items = await repo.list_eligible_items_for_quiz(attempt.quizId)
     items = await _filter_repeat_correct_items(attempt, items)
+
+    # A resumed attempt already has responses; never present an item it has answered
+    if items:
+        seen_ids = {r.itemId for r in await repo.list_responses(attempt_id)}
+        items = [q for q in items if q.id not in seen_ids]
+
     if not items:
         # Nothing to ask
         return {}, None
