@@ -200,6 +200,9 @@ class TestInitAttempt:
              patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock,
                    return_value=[make_db_item()]), \
+             patch("studycat_service.service.core.repo.list_responses",
+                   new_callable=AsyncMock,
+                   return_value=[]), \
              patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
                    new_callable=AsyncMock,
                    return_value={}), \
@@ -232,6 +235,9 @@ class TestInitAttempt:
                    return_value=make_attempt()), \
              patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
                    new_callable=AsyncMock, return_value=[make_db_item()]), \
+             patch("studycat_service.service.core.repo.list_responses",
+                   new_callable=AsyncMock,
+                   return_value=[]), \
              patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
                    new_callable=AsyncMock,
                    return_value={"math": 1.8}), \
@@ -271,6 +277,88 @@ class TestInitAttempt:
             theta, public = await init_attempt("attempt1", None, None, None)
 
         assert theta  == {}
+        assert public is None
+
+    @pytest.mark.asyncio
+    async def test_resumed_attempt_skips_answered_items(
+        self,
+        make_db_item,
+        make_quiz_module,
+        make_attempt,
+        make_response,
+        ):
+        """
+        Re-initialising an attempt that already has responses (the student
+        left and came back) must not present an item answered earlier in the
+        attempt, even when that item is the most informative one. Here the
+        answered item has difficulty 0.0 (most informative at theta 0), so
+        without the filter it would be chosen again.
+        """
+        from studycat_service.service.core import init_attempt
+
+        answered = make_db_item(item_id="answered", b=0.0)
+        fresh = make_db_item(item_id="fresh", b=2.5)
+        prior = make_response("r1", answered)
+        prior.itemId = "answered"
+
+        with patch("studycat_service.service.core.repo.get_attempt",
+                   new_callable=AsyncMock,
+                   return_value=make_attempt()), \
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
+                   new_callable=AsyncMock,
+                   return_value=[answered, fresh]), \
+             patch("studycat_service.service.core.repo.list_responses",
+                   new_callable=AsyncMock,
+                   return_value=[prior]), \
+             patch("studycat_service.service.core.repo.get_thetas_for_enrollment",
+                   new_callable=AsyncMock,
+                   return_value={}), \
+             patch("studycat_service.service.core.repo.get_quiz_modules",
+                   new_callable=AsyncMock,
+                   return_value=[make_quiz_module()]), \
+             patch("studycat_service.service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(repeatCorrectQuestions=True)):
+
+            _, public = await init_attempt("attempt1", ["math"], 0.0, 1.0)
+
+        assert public is not None
+        assert public.item_id == "fresh"
+
+    @pytest.mark.asyncio
+    async def test_resumed_attempt_with_every_item_answered_returns_empty(
+        self,
+        make_db_item,
+        make_attempt,
+        make_response,
+        ):
+        """
+        If every eligible item has already been answered in the attempt there
+        is nothing left to present, so init_attempt returns no item rather
+        than repeating one.
+        """
+        from studycat_service.service.core import init_attempt
+
+        answered = make_db_item(item_id="answered")
+        prior = make_response("r1", answered)
+        prior.itemId = "answered"
+
+        with patch("studycat_service.service.core.repo.get_attempt",
+                   new_callable=AsyncMock,
+                   return_value=make_attempt()), \
+             patch("studycat_service.service.core.repo.list_eligible_items_for_quiz",
+                   new_callable=AsyncMock,
+                   return_value=[answered]), \
+             patch("studycat_service.service.core.repo.list_responses",
+                   new_callable=AsyncMock,
+                   return_value=[prior]), \
+             patch("studycat_service.service.core.repo.get_quiz",
+                   new_callable=AsyncMock,
+                   return_value=MagicMock(repeatCorrectQuestions=True)):
+
+            theta, public = await init_attempt("attempt1", None, None, None)
+
+        assert theta == {}
         assert public is None
 
     @pytest.mark.asyncio
